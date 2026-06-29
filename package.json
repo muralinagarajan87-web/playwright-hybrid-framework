@@ -1,0 +1,35 @@
+{
+  "name": "playwright-e2e-framework",
+  "version": "1.0.0",
+  "description": "Enterprise E2E test automation framework — Web (SauceDemo) + API (Restful-Booker)",
+  "scripts": {
+    "test": "playwright test",
+    "test:web": "playwright test --project=web",
+    "test:api": "playwright test --project=api",
+    "test:sanity": "playwright test --grep @sanity",
+    "test:sanity:web": "playwright test --project=web --grep @sanity",
+    "test:sanity:api": "playwright test --project=api --grep @sanity",
+    "test:regression": "playwright test --grep @regression",
+    "test:regression:web": "playwright test --project=web --grep @regression",
+    "test:regression:api": "playwright test --project=api --grep @regression",
+    "test:headed": "playwright test --project=web --headed",
+    "report": "playwright show-report",
+    "install:browsers": "playwright install chromium",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.62.0",
+    "@typescript-eslint/parser": "^8.62.0",
+    "eslint": "^10.6.0",
+    "eslint-plugin-playwright": "^2.10.4",
+    "typescript": "^6.0.3"
+  }
+}

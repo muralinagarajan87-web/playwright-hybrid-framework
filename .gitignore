@@ -1,0 +1,27 @@
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Auth storage state — generated at runtime, never committed
+storage-state/auth.json
+
+# Environment variables
+.env
+.env.local
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/settings.json
+.idea/
+.claude/
