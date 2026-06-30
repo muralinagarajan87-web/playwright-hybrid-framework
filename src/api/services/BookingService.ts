@@ -13,7 +13,7 @@ export class BookingService extends BaseService {
       : '';
     const url = params ? `${this.baseUrl}/booking?${params}` : `${this.baseUrl}/booking`;
     const { response, durationMs } = await this.measureResponse(() =>
-      this.request.get(url, { headers: { Accept: 'application/json' } })
+      this.request.get(url, { headers: this.jsonHeaders })
     );
     const body = await response.json() as BookingId[];
     return { response, body, durationMs };
@@ -25,9 +25,7 @@ export class BookingService extends BaseService {
     durationMs: number;
   }> {
     const { response, durationMs } = await this.measureResponse(() =>
-      this.request.get(`${this.baseUrl}/booking/${id}`, {
-        headers: { Accept: 'application/json' },
-      })
+      this.request.get(`${this.baseUrl}/booking/${id}`, { headers: this.jsonHeaders })
     );
     const body = response.status() === 200
       ? await response.json() as Booking
@@ -35,7 +33,10 @@ export class BookingService extends BaseService {
     return { response, body, durationMs };
   }
 
-  async createBooking(payload: object): Promise<{
+  // Accepts `Booking` (strongly typed) for valid payloads.
+  // Negative tests that deliberately send malformed data must cast at the call-site
+  // (`payload as unknown as Booking`) so the intentional misuse is visible in test-data.
+  async createBooking(payload: Booking): Promise<{
     response: APIResponse;
     body: CreateBookingResponse;
     durationMs: number;
@@ -43,7 +44,7 @@ export class BookingService extends BaseService {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.post(`${this.baseUrl}/booking`, {
         data: payload,
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: this.jsonHeaders,
       })
     );
     const body = response.status() === 200
@@ -60,11 +61,7 @@ export class BookingService extends BaseService {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.put(`${this.baseUrl}/booking/${id}`, {
         data: payload,
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Cookie: `token=${token}`,
-        },
+        headers: { ...this.jsonHeaders, Cookie: `token=${token}` },
       })
     );
     const body = response.status() === 200
@@ -80,7 +77,7 @@ export class BookingService extends BaseService {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.put(`${this.baseUrl}/booking/${id}`, {
         data: payload,
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: this.jsonHeaders,
       })
     );
     return { response, durationMs };
@@ -94,11 +91,7 @@ export class BookingService extends BaseService {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.patch(`${this.baseUrl}/booking/${id}`, {
         data: payload,
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Cookie: `token=${token}`,
-        },
+        headers: { ...this.jsonHeaders, Cookie: `token=${token}` },
       })
     );
     const body = response.status() === 200

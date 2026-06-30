@@ -25,18 +25,51 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Wake up the Heroku free-tier dyno before running tests.
+      # A cold dyno can take 10-15 s to respond; without this step the first
+      # test hits a 503 or a very slow response that trips the L3 time gate.
+      - name: Warm up API (Heroku cold-start)
+        run: |
+          echo "Pinging API..."
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              https://restful-booker.herokuapp.com/ping)
+            echo "  attempt $i — HTTP $STATUS"
+            [ "$STATUS" = "201" ] && echo "API is warm." && break
+            sleep 5
+          done
+
       - name: Run API sanity tests
         run: npx playwright test --project=api --grep @sanity
         env:
           SKIP_BROWSER_SETUP: 'true'
 
-      - name: Upload report on failure
+      - name: Upload HTML report on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: api-sanity-report
           path: playwright-report/
           retention-days: 7
+
+      - name: Upload JSON results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-sanity-results-json-${{ github.run_id }}
+          path: test-results/results.json
+          retention-days: 90
+
+      - name: Notify on failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -n "$SLACK_WEBHOOK_URL" ]; then
+            curl -s -X POST "$SLACK_WEBHOOK_URL" \
+              -H 'Content-type: application/json' \
+              --data "{\"text\":\"🔴 *API Sanity* failed on \`${{ github.ref_name }}\` (PR gate) — <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>\"}"
+          fi
 
   regression:
     name: API Full Regression
@@ -56,15 +89,47 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Warm up API (Heroku cold-start)
+        run: |
+          echo "Pinging API..."
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              https://restful-booker.herokuapp.com/ping)
+            echo "  attempt $i — HTTP $STATUS"
+            [ "$STATUS" = "201" ] && echo "API is warm." && break
+            sleep 5
+          done
+
       - name: Run API regression tests
         run: npx playwright test --project=api --grep @regression
         env:
           SKIP_BROWSER_SETUP: 'true'
 
-      - name: Upload report
+      - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: api-regression-report-${{ github.run_id }}
           path: playwright-report/
           retention-days: 30
+
+      - name: Upload JSON results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-regression-results-json-${{ github.run_id }}
+          path: test-results/results.json
+          retention-days: 90
+
+      # Nightly failures alert the team without needing to monitor CI dashboards.
+      # Add SLACK_WEBHOOK_URL as a GitHub repository secret to activate this step.
+      - name: Notify on nightly failure
+        if: failure() && github.event_name == 'schedule'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          if [ -n "$SLACK_WEBHOOK_URL" ]; then
+            curl -s -X POST "$SLACK_WEBHOOK_URL" \
+              -H 'Content-type: application/json' \
+              --data "{\"text\":\"🔴 *Nightly API Regression* failed on \`${{ github.ref_name }}\` — <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>\"}"
+          fi

@@ -42,6 +42,8 @@ export const BOOKING_PAYLOADS = {
     totalprice: 750,
   } satisfies Partial<Booking>,
 
+  // Deliberately missing `firstname` — used by TC_CREATE_003 to verify the API
+  // rejects invalid input. Cast required because createBooking() is strongly typed.
   missingFirstname: {
     lastname: 'Brown',
     totalprice: 150,
@@ -50,7 +52,7 @@ export const BOOKING_PAYLOADS = {
       checkin: '2030-06-01',
       checkout: '2030-06-07',
     },
-  },
+  } as unknown as Booking,
 };
 
 // Overrides applied on top of a DataFactory base payload for the E2E lifecycle test.

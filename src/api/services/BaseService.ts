@@ -4,6 +4,13 @@ export class BaseService {
   protected readonly baseUrl: string;
   protected readonly request: APIRequestContext;
 
+  // Centralised default headers — every service method uses these directly,
+  // eliminating the duplicate copies that previously lived in BookingService.
+  protected readonly jsonHeaders = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  } as const;
+
   constructor(request: APIRequestContext, baseUrl: string) {
     this.request = request;
     this.baseUrl = baseUrl;

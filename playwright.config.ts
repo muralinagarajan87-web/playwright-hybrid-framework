@@ -7,7 +7,13 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 3 : undefined,
-  reporter: [['html', { open: 'never' }], ['list']],
+  reporter: [
+    ['html', { open: 'never' }],
+    ['list'],
+    // JSON output enables test-result trend dashboards, flaky-test detection,
+    // and integration with external reporting tools (TestRail, Allure, etc.)
+    ['json', { outputFile: 'test-results/results.json' }],
+  ],
   globalSetup: './src/web/fixtures/global-setup.ts',
   globalTeardown: './src/web/fixtures/global-teardown.ts',
 

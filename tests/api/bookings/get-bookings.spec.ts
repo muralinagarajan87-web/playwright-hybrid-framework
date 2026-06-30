@@ -9,7 +9,13 @@ import {
 } from '../../../src/api/models/schemas/booking.schemas';
 
 test.describe('GET Bookings', () => {
-  test('TC_GET_001 — verify the API returns a list of all booking IDs', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService }) => {
+  test('TC_GET_001 — verify the API returns a list of all booking IDs', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
+    // Create a controlled booking so this test never relies on the shared Heroku demo
+    // server already having data. If the DB is wiped, this test still passes correctly.
+    const seed = await bookingService.createBooking(DataFactory.createBookingPayload());
+    const seedId = seed.body.bookingid;
+    bookingCleanup(seedId);
+
     const { response, body, durationMs } = await bookingService.getAllBookings();
 
     // L2 — Status code
@@ -18,8 +24,10 @@ test.describe('GET Bookings', () => {
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
     // L4 — Response schema: AJV validates the full list structure against the API contract
     assertSchema(bookingListSchema, body);
-    // L5 — Contract: list must not be empty — a shared demo API always has pre-existing bookings
-    expect(body.length).toBeGreaterThan(0);
+    // L5 — Contract: our controlled booking must appear in the list.
+    // Asserting our own ID (not just body.length > 0) proves the API returns live data,
+    // not a cached or empty response.
+    expect(body.some(b => b.bookingid === seedId)).toBe(true);
     // L8 — Headers
     expect(response.headers()['content-type']).toContain('application/json');
   });
