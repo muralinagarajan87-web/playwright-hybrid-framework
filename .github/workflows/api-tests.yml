@@ -27,6 +27,8 @@ jobs:
 
       - name: Run API sanity tests
         run: npx playwright test --project=api --grep @sanity
+        env:
+          SKIP_BROWSER_SETUP: 'true'
 
       - name: Upload report on failure
         if: failure()
@@ -56,6 +58,8 @@ jobs:
 
       - name: Run API regression tests
         run: npx playwright test --project=api --grep @regression
+        env:
+          SKIP_BROWSER_SETUP: 'true'
 
       - name: Upload report
         if: always()

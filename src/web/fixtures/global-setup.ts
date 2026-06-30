@@ -4,6 +4,9 @@ import * as path from 'path';
 import { USERS } from '../../../test-data/web/users';
 
 async function globalSetup(config: FullConfig): Promise<void> {
+  // API-only CI sets this to skip the browser launch — Chromium is not installed there
+  if (process.env.SKIP_BROWSER_SETUP === 'true') return;
+
   const storageDir = path.join(process.cwd(), 'storage-state');
   if (!fs.existsSync(storageDir)) {
     fs.mkdirSync(storageDir, { recursive: true });
