@@ -1,7 +1,6 @@
 import { test } from '../../../src/web/fixtures/pages.fixture';
 import { PRODUCTS } from '../../../test-data/web/products';
-
-const CHECKOUT_INFO = { firstName: 'John', lastName: 'Doe', postalCode: '10001' };
+import { CHECKOUT_USER } from '../../../test-data/web/checkout';
 
 test.describe('Shopping Cart & Checkout Module', () => {
   test('TC_CHECKOUT_001 — verify user can successfully complete the full checkout flow', { tag: ['@sanity', '@regression', '@positive'] }, async ({ inventoryPage, cartPage, checkoutInfoPage, checkoutOverviewPage, checkoutCompletePage }) => {
@@ -22,7 +21,11 @@ test.describe('Shopping Cart & Checkout Module', () => {
     });
 
     await test.step('Fill in first name, last name, and postal code, then click Continue', async () => {
-      await checkoutInfoPage.fillCheckoutInfo(CHECKOUT_INFO.firstName, CHECKOUT_INFO.lastName, CHECKOUT_INFO.postalCode);
+      await checkoutInfoPage.fillCheckoutInfo(
+        CHECKOUT_USER.standard.firstName,
+        CHECKOUT_USER.standard.lastName,
+        CHECKOUT_USER.standard.postalCode,
+      );
       await checkoutInfoPage.continue();
     });
 
@@ -74,7 +77,11 @@ test.describe('Shopping Cart & Checkout Module', () => {
     });
 
     await test.step('Fill in first and last name but leave postal code empty, then click Continue', async () => {
-      await checkoutInfoPage.fillCheckoutInfo('Jane', 'Smith', '');
+      await checkoutInfoPage.fillCheckoutInfo(
+        CHECKOUT_USER.missingPostalCode.firstName,
+        CHECKOUT_USER.missingPostalCode.lastName,
+        CHECKOUT_USER.missingPostalCode.postalCode,
+      );
       await checkoutInfoPage.continue();
     });
 

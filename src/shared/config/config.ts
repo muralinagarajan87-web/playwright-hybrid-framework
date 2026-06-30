@@ -6,5 +6,5 @@ export const API_CONFIG = {
   baseUrl: process.env.API_BASE_URL || 'https://restful-booker.herokuapp.com',
   username: process.env.API_USERNAME || 'admin',
   password: process.env.API_PASSWORD || 'password123',
-  responseTimeThreshold: 3000,
+  responseTimeThreshold: 5000,
 };

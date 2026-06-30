@@ -2,6 +2,7 @@ export const USERS = {
   standard: {
     username: 'standard_user',
     password: 'secret_sauce',
+    invalidPassword: 'wrong_password',
   },
   lockedOut: {
     username: 'locked_out_user',

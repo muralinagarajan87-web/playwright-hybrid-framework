@@ -10,25 +10,40 @@ import { AUTH_CREDENTIALS } from '../../../test-data/api/auth';
 // instead of the API layer (e.g. db.query('DELETE FROM bookings WHERE id = $1', [id])).
 type BookingCleanupFn = (id: number) => void;
 
+// Test-scoped fixtures — created fresh for each test
 type ApiFixtures = {
   authService: AuthService;
   bookingService: BookingService;
-  token: string;
   bookingCleanup: BookingCleanupFn;
 };
 
-export const test = base.extend<ApiFixtures>({
+// Worker-scoped fixtures — created once per parallel worker, shared across all tests in that worker.
+// Worker fixtures can only depend on other worker-scoped fixtures, which is why `token` uses
+// `playwright.request` (worker-scoped) instead of the test-scoped `request` fixture.
+type ApiWorkerFixtures = {
+  token: string;
+};
+
+export const test = base.extend<ApiFixtures, ApiWorkerFixtures>({
+  // ── Worker-scoped ──────────────────────────────────────────────────────────
+  token: [async ({ playwright }, use) => {
+    const context = await playwright.request.newContext({
+      baseURL: API_CONFIG.baseUrl,
+      extraHTTPHeaders: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    });
+    const response = await context.post('/auth', { data: AUTH_CREDENTIALS.valid });
+    const body = await response.json() as { token: string };
+    await context.dispose();
+    await use(body.token);
+  }, { scope: 'worker' }],
+
+  // ── Test-scoped ────────────────────────────────────────────────────────────
   authService: async ({ request }, use) => {
     await use(new AuthService(request, API_CONFIG.baseUrl));
   },
 
   bookingService: async ({ request }, use) => {
     await use(new BookingService(request, API_CONFIG.baseUrl));
-  },
-
-  token: async ({ authService }, use) => {
-    const token = await authService.createToken(AUTH_CREDENTIALS.valid);
-    await use(token);
   },
 
   bookingCleanup: async ({ bookingService, token }, use) => {

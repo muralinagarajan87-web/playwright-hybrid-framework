@@ -18,13 +18,19 @@ test.describe('GET Bookings', () => {
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
     // L4 — Response schema: AJV validates the full list structure against the API contract
     assertSchema(bookingListSchema, body);
+    // L5 — Contract: list must not be empty — a shared demo API always has pre-existing bookings
+    expect(body.length).toBeGreaterThan(0);
     // L8 — Headers
     expect(response.headers()['content-type']).toContain('application/json');
   });
 
-  test('TC_GET_002 — verify the API returns complete booking details for a valid booking ID', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService }) => {
-    const list = await bookingService.getAllBookings();
-    const bookingId = list.body[0].bookingid;
+  test('TC_GET_002 — verify the API returns complete booking details for a valid booking ID', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
+    // Create a controlled booking so this test owns its data and is not at risk from
+    // a parallel DELETE test removing body[0] mid-execution (race condition under fullyParallel).
+    const payload = DataFactory.createBookingPayload();
+    const created = await bookingService.createBooking(payload);
+    const bookingId = created.body.bookingid;
+    bookingCleanup(bookingId);
 
     const { response, body, durationMs } = await bookingService.getBookingById(bookingId);
 
@@ -45,17 +51,17 @@ test.describe('GET Bookings', () => {
     expect(body2.depositpaid).toBe(body.depositpaid);
     expect(body2.bookingdates.checkin).toBe(body.bookingdates.checkin);
     expect(body2.bookingdates.checkout).toBe(body.bookingdates.checkout);
-    // L6 (cont.) — name fields must not be empty strings
-    expect(body.firstname.length).toBeGreaterThan(0);
-    expect(body.lastname.length).toBeGreaterThan(0);
+    // L7 — Data integrity: response matches what was sent in the create
+    expect(body.firstname).toBe(payload.firstname);
+    expect(body.totalprice).toBe(payload.totalprice);
     // L8 — Headers
     expect(response.headers()['content-type']).toContain('application/json');
   });
 
   test('TC_GET_003 — verify the API returns only bookings matching the firstname filter', { tag: ['@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
-    // Use a guaranteed-unique firstname so we can assert EXACTLY one result is returned.
-    // If the API ignores the filter and returns all bookings, body.length > 1 and the test fails.
-    const uniqueFirstname = `Filter_${Date.now()}_${DataFactory.randomString(4)}`;
+    // Guaranteed-unique firstname: timestamp + 6-char random suffix.
+    // Exact-length randomString fix ensures no short-string collisions.
+    const uniqueFirstname = `Filter_${Date.now()}_${DataFactory.randomString(6)}`;
     const payload = DataFactory.createBookingPayload({ firstname: uniqueFirstname });
     const created = await bookingService.createBooking(payload);
     const createdId = created.body.bookingid;
@@ -71,11 +77,11 @@ test.describe('GET Bookings', () => {
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
     // L4 — Response schema: filtered result must still conform to the booking list contract
     assertSchema(bookingListSchema, body);
-    // L5 — Filter precision: exactly ONE result must be returned — if the API ignores the filter
-    // it returns thousands of bookings; if the filter is case-sensitive it returns zero.
-    // Both bugs are caught here.
+    // L5 — Filter precision: exactly ONE result must be returned.
+    // If the API ignores the filter → returns all bookings → body.length > 1 → FAIL.
+    // If the filter is case-sensitive and breaks → returns zero → body.length === 0 → FAIL.
     expect(body).toHaveLength(1);
-    // L7 — Data integrity: the single result must be the exact booking we just created
+    // L7 — Data integrity: the single result must be the exact booking we created
     expect(body[0].bookingid).toBe(createdId);
     // L8 — Headers
     expect(response.headers()['content-type']).toContain('application/json');

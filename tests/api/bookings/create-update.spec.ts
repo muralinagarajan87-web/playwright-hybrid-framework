@@ -94,8 +94,11 @@ test.describe('Create & Update Bookings', () => {
 
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
-    // L6 — Business logic: required field enforcement must return a client or server error
-    expect([400, 500]).toContain(response.status());
+    // L6 — Business logic: Restful-Booker returns 500 for missing required fields because it
+    // does not validate input before attempting the insert (known API defect — should be 400).
+    // This assertion pins the current behaviour; if the API is ever fixed to return 400, this
+    // test will catch the change and should be updated to assert 400.
+    expect(response.status()).toBe(500);
   });
 
   test('TC_UPDATE_001 — verify a booking is fully updated with a valid auth token', { tag: ['@regression', '@positive'] }, async ({ bookingService, token, bookingCleanup }) => {
@@ -163,7 +166,7 @@ test.describe('Create & Update Bookings', () => {
     const bookingId = created.body.bookingid;
     bookingCleanup(bookingId);
 
-    const patchPayload = { firstname: 'PatchedName', totalprice: 750 };
+    const patchPayload = BOOKING_PAYLOADS.patchPayload;
     // L1 — Request schema: PATCH sends a partial object — at least 1 field, no required fields
     assertSchema(partialBookingRequestSchema, patchPayload);
 
@@ -178,8 +181,8 @@ test.describe('Create & Update Bookings', () => {
     // L5 — Date ordering: original dates must be preserved and still valid
     assertDateOrder(body.bookingdates.checkin, body.bookingdates.checkout);
     // L7 — Data integrity: only the patched fields must change
-    expect(body.firstname).toBe('PatchedName');
-    expect(body.totalprice).toBe(750);
+    expect(body.firstname).toBe(BOOKING_PAYLOADS.patchPayload.firstname);
+    expect(body.totalprice).toBe(BOOKING_PAYLOADS.patchPayload.totalprice);
     // L5 — Contract: ALL unpatched fields must retain their exact original values
     expect(body.lastname).toBe(original.lastname);
     expect(body.depositpaid).toBe(original.depositpaid);

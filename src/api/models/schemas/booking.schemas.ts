@@ -58,7 +58,6 @@ export const createBookingResponseSchema = {
 /** GET /booking (list) */
 export const bookingListSchema = {
   type: 'array',
-  minItems: 1,
   items: {
     type: 'object',
     required: ['bookingid'],
@@ -136,13 +135,23 @@ export const partialBookingRequestSchema = {
 
 // ── Validators ───────────────────────────────────────────────────────────────
 
+// Cache compiled validators by schema object reference to avoid recompiling
+// the same schema on every assertSchema() call (compile() is expensive).
+const compiledCache = new WeakMap<object, ReturnType<typeof ajv.compile>>();
+
 /**
  * Validates `data` against `schema` using AJV.
+ * Compiled validators are cached by schema reference — the same schema object
+ * is compiled exactly once per process lifetime.
  * Throws with the exact field path that violated the contract so Playwright
  * reports precisely what broke.
  */
 export function assertSchema(schema: object, data: unknown): void {
-  const validate = ajv.compile(schema);
+  let validate = compiledCache.get(schema);
+  if (!validate) {
+    validate = ajv.compile(schema);
+    compiledCache.set(schema, validate);
+  }
   if (!validate(data)) {
     const errors = ajv.errorsText(validate.errors, { separator: '\n  ' });
     throw new Error(`JSON Schema validation failed:\n  ${errors}`);

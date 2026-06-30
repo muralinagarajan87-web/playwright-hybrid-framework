@@ -25,7 +25,7 @@ test.describe('Login Module', () => {
 
   test('TC_LOGIN_002 — verify login fails with an invalid password', { tag: ['@sanity', '@regression', '@negative'] }, async ({ loginPage }) => {
     await test.step('Enter valid username with an incorrect password and click Login', async () => {
-      await loginPage.login(USERS.standard.username, 'wrong_password');
+      await loginPage.login(USERS.standard.username, USERS.standard.invalidPassword);
     });
 
     await test.step('Verify the error message is displayed', async () => {

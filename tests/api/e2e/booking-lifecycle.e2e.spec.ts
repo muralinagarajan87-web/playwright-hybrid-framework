@@ -1,6 +1,7 @@
 import { test, expect } from '../../../src/api/fixtures/api.fixture';
 import { DataFactory } from '../../../src/shared/utils/DataFactory';
 import { API_CONFIG } from '../../../src/shared/config/config';
+import { E2E_BOOKING_OVERRIDES } from '../../../test-data/api/bookings';
 import {
   assertSchema,
   assertDateOrder,
@@ -11,13 +12,7 @@ import {
 
 test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, update, verify, delete, confirm deleted', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, token, bookingCleanup }) => {
   // ── Step 1: Create booking ──────────────────────────────────────────────
-  const originalPayload = DataFactory.createBookingPayload({
-    firstname: 'E2E',
-    lastname: 'Test',
-    totalprice: 300,
-    depositpaid: true,
-    additionalneeds: 'Dinner',
-  });
+  const originalPayload = DataFactory.createBookingPayload(E2E_BOOKING_OVERRIDES);
 
   // L1 — Request schema: validate the create payload before it leaves the test
   assertSchema(bookingRequestSchema, originalPayload);

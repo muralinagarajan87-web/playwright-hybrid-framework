@@ -2,7 +2,12 @@ import { Booking } from '../../api/models/Booking';
 
 export class DataFactory {
   static randomString(length = 6): string {
-    return Math.random().toString(36).substring(2, 2 + length);
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return result;
   }
 
   static randomInt(min: number, max: number): number {

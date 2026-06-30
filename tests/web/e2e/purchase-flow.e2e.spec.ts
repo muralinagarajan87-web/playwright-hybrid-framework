@@ -1,6 +1,7 @@
 import { test } from '../../../src/web/fixtures/pages.fixture';
 import { USERS } from '../../../test-data/web/users';
 import { PRODUCTS } from '../../../test-data/web/products';
+import { CHECKOUT_USER } from '../../../test-data/web/checkout';
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -42,7 +43,11 @@ test('TC_E2E_WEB_001 — verify the complete end-to-end purchase flow from login
   });
 
   await test.step('Fill in checkout information and click Continue', async () => {
-    await checkoutInfoPage.fillCheckoutInfo('John', 'Doe', '10001');
+    await checkoutInfoPage.fillCheckoutInfo(
+      CHECKOUT_USER.standard.firstName,
+      CHECKOUT_USER.standard.lastName,
+      CHECKOUT_USER.standard.postalCode,
+    );
     await checkoutInfoPage.continue();
   });
 

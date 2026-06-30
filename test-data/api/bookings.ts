@@ -36,6 +36,12 @@ export const BOOKING_PAYLOADS = {
     additionalneeds: 'Dinner',
   } satisfies Booking,
 
+  // Partial payload used for PATCH tests — only the fields being updated
+  patchPayload: {
+    firstname: 'PatchedName',
+    totalprice: 750,
+  } satisfies Partial<Booking>,
+
   missingFirstname: {
     lastname: 'Brown',
     totalprice: 150,
@@ -46,3 +52,13 @@ export const BOOKING_PAYLOADS = {
     },
   },
 };
+
+// Overrides applied on top of a DataFactory base payload for the E2E lifecycle test.
+// Kept here so no string literals appear inside the test file itself.
+export const E2E_BOOKING_OVERRIDES = {
+  firstname:       'E2E',
+  lastname:        'Test',
+  totalprice:      300,
+  depositpaid:     true,
+  additionalneeds: 'Dinner',
+} satisfies Partial<Booking>;
