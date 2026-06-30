@@ -1,7 +1,7 @@
-import { test } from '../../../src/web/fixtures/pages.fixture';
-import { USERS } from '../../../test-data/web/users';
-import { PRODUCTS } from '../../../test-data/web/products';
-import { CHECKOUT_USER } from '../../../test-data/web/checkout';
+import { test } from '@web/fixtures/pages.fixture';
+import { USERS } from '@data/web/users';
+import { PRODUCTS } from '@data/web/products';
+import { CHECKOUT_USER } from '@data/web/checkout';
 
 test.use({ storageState: { cookies: [], origins: [] } });
 

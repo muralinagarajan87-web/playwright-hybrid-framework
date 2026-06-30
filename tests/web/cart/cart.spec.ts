@@ -1,6 +1,6 @@
-import { test } from '../../../src/web/fixtures/pages.fixture';
-import { PRODUCTS } from '../../../test-data/web/products';
-import { CHECKOUT_USER } from '../../../test-data/web/checkout';
+import { test } from '@web/fixtures/pages.fixture';
+import { PRODUCTS } from '@data/web/products';
+import { CHECKOUT_USER } from '@data/web/checkout';
 
 test.describe('Shopping Cart & Checkout Module', () => {
   test('TC_CHECKOUT_001 — verify user can successfully complete the full checkout flow', { tag: ['@sanity', '@regression', '@positive'] }, async ({ inventoryPage, cartPage, checkoutInfoPage, checkoutOverviewPage, checkoutCompletePage }) => {

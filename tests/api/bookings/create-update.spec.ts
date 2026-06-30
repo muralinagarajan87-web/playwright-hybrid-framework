@@ -1,7 +1,7 @@
-import { test, expect } from '../../../src/api/fixtures/api.fixture';
-import { BOOKING_PAYLOADS, INVALID_BOOKING_PAYLOADS } from '../../../test-data/api/bookings';
-import { API_CONFIG } from '../../../src/shared/config/config';
-import { DataFactory } from '../../../src/shared/utils/DataFactory';
+import { test, expect } from '@api/fixtures/api.fixture';
+import { BOOKING_PAYLOADS, INVALID_BOOKING_PAYLOADS } from '@data/api/bookings';
+import { API_CONFIG } from '@shared/config/config';
+import { DataFactory } from '@shared/utils/DataFactory';
 import {
   assertSchema,
   assertDateOrder,
@@ -9,7 +9,7 @@ import {
   bookingSchema,
   bookingRequestSchema,
   partialBookingRequestSchema,
-} from '../../../src/api/models/schemas/booking.schemas';
+} from '@api/models/schemas/booking.schemas';
 
 test.describe('Create & Update Bookings', () => {
   test('TC_CREATE_001 — verify a new booking is created successfully with all fields provided', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
@@ -196,5 +196,28 @@ test.describe('Create & Update Bookings', () => {
     expect(body.additionalneeds).toBe(original.additionalneeds);
     // L8 — Headers
     expect(response.headers()['content-type']).toContain('application/json');
+  });
+
+  test('TC_UPDATE_004 — verify a partial booking update is rejected without an auth token', { tag: ['@regression', '@negative'] }, async ({ bookingService, bookingCleanup }) => {
+    // Symmetric to TC_UPDATE_002 (PUT without auth) — PATCH uses a separate middleware
+    // handler; a bug that exempts PATCH from auth checking would be missed without this test.
+    const original = DataFactory.createBookingPayload();
+    const created = await bookingService.createBooking(original);
+    const bookingId = created.body.bookingid;
+    bookingCleanup(bookingId);
+
+    const { response, durationMs } = await bookingService.partialUpdateBookingWithoutAuth(
+      bookingId,
+      BOOKING_PAYLOADS.patchPayload
+    );
+
+    // L2 — Status code: unauthenticated PATCH must be rejected the same as PUT
+    expect(response.status()).toBe(403);
+    // L3 — Response time
+    expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
+    // L6 — Persistence: original data must be completely unchanged after rejected PATCH
+    const { body: unchanged } = await bookingService.getBookingById(bookingId);
+    expect(unchanged.firstname).toBe(original.firstname);
+    expect(unchanged.totalprice).toBe(original.totalprice);
   });
 });

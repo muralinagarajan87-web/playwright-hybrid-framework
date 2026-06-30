@@ -1,7 +1,7 @@
 import { chromium, FullConfig } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
-import { USERS } from '../../../test-data/web/users';
+import { USERS } from '@data/web/users';
 
 async function globalSetup(config: FullConfig): Promise<void> {
   // API-only CI sets this to skip the browser launch — Chromium is not installed there

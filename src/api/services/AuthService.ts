@@ -1,5 +1,5 @@
 import { BaseService, ServiceResponse } from './BaseService';
-import { AuthCredentials } from '../models/Auth';
+import { API_ENDPOINTS } from './endpoints';
 
 export class AuthService extends BaseService {
   // createTokenRaw() is the primary test-facing method — it accepts loose credentials
@@ -7,7 +7,7 @@ export class AuthService extends BaseService {
   // body, wrong types) without requiring a separate method per invalid shape.
   async createTokenRaw(credentials: Record<string, unknown>): Promise<ServiceResponse<Record<string, unknown>>> {
     const { response, durationMs } = await this.measureResponse(() =>
-      this.request.post(`${this.baseUrl}/auth`, {
+      this.request.post(`${this.baseUrl}${API_ENDPOINTS.auth}`, {
         data: credentials,
         headers: this.jsonHeaders,
       })

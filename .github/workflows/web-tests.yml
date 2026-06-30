@@ -25,6 +25,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Type-check and lint
+        run: |
+          npm run typecheck
+          npm run lint
+
       # Cache the Chromium binary between runs. The key is tied to package-lock.json
       # so the cache is invalidated automatically when the Playwright version changes.
       # System dependencies (apt packages from --with-deps) cannot be cached but are
@@ -73,10 +78,16 @@ jobs:
   regression:
     name: Web Full Regression
     runs-on: ubuntu-latest
+    # On workflow_dispatch: wait for sanity to pass before spending CI minutes on regression.
+    # On push/schedule: sanity is skipped (result = 'skipped'), so regression runs immediately.
+    # always() is required — without it, a skipped sanity job would block regression entirely.
+    needs: [sanity]
     if: >
-      github.event_name == 'push' ||
-      github.event_name == 'schedule' ||
-      github.event_name == 'workflow_dispatch'
+      always() &&
+      (needs.sanity.result == 'success' || needs.sanity.result == 'skipped') &&
+      (github.event_name == 'push' ||
+       github.event_name == 'schedule' ||
+       github.event_name == 'workflow_dispatch')
     steps:
       - uses: actions/checkout@v4
 
@@ -87,6 +98,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Type-check and lint
+        run: |
+          npm run typecheck
+          npm run lint
 
       - name: Cache Playwright browsers
         id: playwright-cache

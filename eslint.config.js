@@ -29,7 +29,7 @@ export default [
       // Playwright
       'playwright/no-wait-for-timeout': 'error',
       'playwright/no-focused-test': 'error',
-      'playwright/no-skipped-test': 'warn',
+      'playwright/no-skipped-test': 'error',
       'playwright/prefer-web-first-assertions': 'error',
       'playwright/no-conditional-in-test': 'warn',
       // POM assertion methods (expectOnPage, expectCartCount etc.) all wrap expect() internally.
@@ -38,7 +38,7 @@ export default [
       'playwright/expect-expect': ['warn', { assertFunctionNames: ['expect', 'expect*'] }],
 
       // General
-      'no-console': 'error',
+      'no-console': ['error', { allow: ['warn', 'error'] }],
       'no-duplicate-imports': 'error',
       'prefer-const': 'error',
     },

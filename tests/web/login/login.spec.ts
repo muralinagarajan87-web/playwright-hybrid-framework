@@ -1,5 +1,5 @@
-import { test, expect } from '../../../src/web/fixtures/pages.fixture';
-import { USERS } from '../../../test-data/web/users';
+import { test, expect } from '@web/fixtures/pages.fixture';
+import { USERS } from '@data/web/users';
 
 // Login tests must run without pre-authenticated state
 test.use({ storageState: { cookies: [], origins: [] } });

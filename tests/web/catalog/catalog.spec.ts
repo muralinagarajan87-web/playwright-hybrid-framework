@@ -1,5 +1,5 @@
-import { test, expect } from '../../../src/web/fixtures/pages.fixture';
-import { PRODUCTS } from '../../../test-data/web/products';
+import { test, expect } from '@web/fixtures/pages.fixture';
+import { PRODUCTS } from '@data/web/products';
 
 test.describe('Product Catalog Module', () => {
   test.beforeEach(async ({ inventoryPage }) => {

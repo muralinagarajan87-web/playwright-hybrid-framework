@@ -1,6 +1,6 @@
-import { test, expect } from '../../../src/api/fixtures/api.fixture';
-import { API_CONFIG } from '../../../src/shared/config/config';
-import { DataFactory } from '../../../src/shared/utils/DataFactory';
+import { test, expect } from '@api/fixtures/api.fixture';
+import { API_CONFIG } from '@shared/config/config';
+import { DataFactory } from '@shared/utils/DataFactory';
 
 test.describe('Delete Booking — DELETE /booking/:id', () => {
   test('TC_DELETE_001 — verify a booking is successfully deleted with a valid auth token', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {

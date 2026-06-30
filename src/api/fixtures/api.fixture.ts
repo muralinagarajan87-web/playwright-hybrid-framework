@@ -1,8 +1,9 @@
 import { test as base } from '@playwright/test';
 import { AuthService } from '../services/AuthService';
 import { BookingService } from '../services/BookingService';
-import { API_CONFIG } from '../../shared/config/config';
-import { AUTH_CREDENTIALS } from '../../../test-data/api/auth';
+import { API_ENDPOINTS } from '../services/endpoints';
+import { API_CONFIG } from '@shared/config/config';
+import { AUTH_CREDENTIALS } from '@data/api/auth';
 
 // Callback type: tests call this immediately after creating a booking to register its ID.
 // The fixture teardown then deletes every registered ID once the test ends — pass or fail.
@@ -34,7 +35,24 @@ export const test = base.extend<ApiFixtures, ApiWorkerFixtures>({
       baseURL: API_CONFIG.baseUrl,
       extraHTTPHeaders: { 'Content-Type': 'application/json', Accept: 'application/json' },
     });
-    const response = await context.post('/auth', { data: AUTH_CREDENTIALS.valid });
+
+    // Retry up to 3 attempts on 503 — the CI Heroku warmup step reduces but cannot
+    // fully eliminate cold-start races. When fixture setup fails, Playwright marks
+    // every test in the worker as an error (not a failure), so retrying here is
+    // preferable to failing all tests silently.
+    let response = await context.post(API_ENDPOINTS.auth, { data: AUTH_CREDENTIALS.valid });
+    for (let attempt = 2; attempt <= 3 && response.status() === 503; attempt++) {
+      await new Promise<void>(resolve => { setTimeout(resolve, 3000 * attempt); });
+      response = await context.post(API_ENDPOINTS.auth, { data: AUTH_CREDENTIALS.valid });
+    }
+
+    if (response.status() !== 200) {
+      await context.dispose();
+      throw new Error(
+        `Token fixture: POST /auth returned ${response.status()} after 3 attempts — cannot proceed.`
+      );
+    }
+
     const body = await response.json() as { token: string };
     await context.dispose();
     await use(body.token);

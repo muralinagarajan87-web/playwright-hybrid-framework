@@ -1,12 +1,12 @@
-import { test, expect } from '../../../src/api/fixtures/api.fixture';
-import { API_CONFIG } from '../../../src/shared/config/config';
-import { DataFactory } from '../../../src/shared/utils/DataFactory';
+import { test, expect } from '@api/fixtures/api.fixture';
+import { API_CONFIG } from '@shared/config/config';
+import { DataFactory } from '@shared/utils/DataFactory';
 import {
   assertSchema,
   assertDateOrder,
   bookingListSchema,
   bookingSchema,
-} from '../../../src/api/models/schemas/booking.schemas';
+} from '@api/models/schemas/booking.schemas';
 
 test.describe('GET Bookings', () => {
   test('TC_GET_001 — verify the API returns a list of all booking IDs', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {

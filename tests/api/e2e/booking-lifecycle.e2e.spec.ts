@@ -1,14 +1,14 @@
-import { test, expect } from '../../../src/api/fixtures/api.fixture';
-import { DataFactory } from '../../../src/shared/utils/DataFactory';
-import { API_CONFIG } from '../../../src/shared/config/config';
-import { E2E_BOOKING_OVERRIDES } from '../../../test-data/api/bookings';
+import { test, expect } from '@api/fixtures/api.fixture';
+import { DataFactory } from '@shared/utils/DataFactory';
+import { API_CONFIG } from '@shared/config/config';
+import { E2E_BOOKING_OVERRIDES } from '@data/api/bookings';
 import {
   assertSchema,
   assertDateOrder,
   createBookingResponseSchema,
   bookingSchema,
   bookingRequestSchema,
-} from '../../../src/api/models/schemas/booking.schemas';
+} from '@api/models/schemas/booking.schemas';
 
 test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, update, verify, delete, confirm deleted', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
   // ── Step 1: Create booking ──────────────────────────────────────────────
