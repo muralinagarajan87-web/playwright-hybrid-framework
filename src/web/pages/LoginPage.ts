@@ -24,6 +24,10 @@ export class LoginPage {
   }
 
   async expectOnPage(): Promise<void> {
+    // SauceDemo's login page is the root URL — no path segment like /login.html.
+    // Asserting the URL (not just element visibility) is the authoritative proof
+    // the user is still on this page and was not redirected to inventory.
+    await expect(this.page).toHaveURL(/saucedemo\.com\/?$/);
     await expect(this.loginButton).toBeVisible();
   }
 

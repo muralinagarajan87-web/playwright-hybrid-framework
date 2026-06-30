@@ -38,8 +38,13 @@ export class BookingService extends BaseService {
   }
 
   async getAllBookings(filters?: BookingFilters): Promise<ServiceResponse<BookingId[]>> {
+    // Filter out undefined values before building URLSearchParams — passing
+    // { firstname: undefined } would otherwise serialize as "?firstname=undefined"
+    // (a string literal), silently sending a filter the API would not expect.
     const params = filters
-      ? new URLSearchParams(filters as Record<string, string>).toString()
+      ? new URLSearchParams(
+          Object.entries(filters).filter((e): e is [string, string] => e[1] !== undefined)
+        ).toString()
       : '';
     const url = params ? `${this.baseUrl}/booking?${params}` : `${this.baseUrl}/booking`;
     const { response, durationMs } = await this.measureResponse(() =>

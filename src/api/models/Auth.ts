@@ -10,5 +10,3 @@ export interface AuthSuccessResponse {
 export interface AuthFailureResponse {
   reason: string;
 }
-
-export type AuthResponse = AuthSuccessResponse | AuthFailureResponse;

@@ -1,25 +1,11 @@
-import { APIResponse } from '@playwright/test';
-import { BaseService } from './BaseService';
+import { BaseService, ServiceResponse } from './BaseService';
 import { AuthCredentials } from '../models/Auth';
 
 export class AuthService extends BaseService {
-  async createToken(credentials: AuthCredentials): Promise<string> {
-    const { response } = await this.measureResponse(() =>
-      this.request.post(`${this.baseUrl}/auth`, {
-        data: credentials,
-        headers: this.jsonHeaders,
-      })
-    );
-    const body = await response.json();
-    if (!body.token) throw new Error(`Auth failed: ${body.reason}`);
-    return body.token as string;
-  }
-
-  async createTokenRaw(credentials: object): Promise<{
-    response: APIResponse;
-    body: Record<string, unknown>;
-    durationMs: number;
-  }> {
+  // createTokenRaw() is the primary test-facing method — it accepts loose credentials
+  // so negative tests can pass intentionally malformed payloads (missing fields, empty
+  // body, wrong types) without requiring a separate method per invalid shape.
+  async createTokenRaw(credentials: Record<string, unknown>): Promise<ServiceResponse<Record<string, unknown>>> {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.post(`${this.baseUrl}/auth`, {
         data: credentials,
