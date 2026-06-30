@@ -7,7 +7,7 @@ export class AuthService extends BaseService {
     const { response } = await this.measureResponse(() =>
       this.request.post(`${this.baseUrl}/auth`, {
         data: credentials,
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.jsonHeaders,
       })
     );
     const body = await response.json();
@@ -23,7 +23,7 @@ export class AuthService extends BaseService {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.post(`${this.baseUrl}/auth`, {
         data: credentials,
-        headers: { 'Content-Type': 'application/json' },
+        headers: this.jsonHeaders,
       })
     );
     const body = await response.json() as Record<string, unknown>;
