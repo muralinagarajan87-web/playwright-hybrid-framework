@@ -1,6 +1,7 @@
 import { test, expect } from '../../../src/api/fixtures/api.fixture';
 import { AUTH_CREDENTIALS } from '../../../test-data/api/auth';
 import { API_CONFIG } from '../../../src/shared/config/config';
+import { assertSchema, authSuccessSchema, authErrorSchema } from '../../../src/api/models/schemas/booking.schemas';
 
 test.describe('Authentication — POST /auth', () => {
   test('TC_AUTH_001 — verify a valid auth token is returned with correct credentials', { tag: ['@sanity', '@regression', '@positive'] }, async ({ authService }) => {
@@ -10,11 +11,9 @@ test.describe('Authentication — POST /auth', () => {
     expect(response.status()).toBe(200);
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
-    // L4 — Response schema: token field present and typed correctly
-    expect(body).toHaveProperty('token');
-    expect(typeof body.token).toBe('string');
-    // L5 — Contract: token is non-empty; no error reason present on success
-    expect((body.token as string).length).toBeGreaterThan(0);
+    // L4 — Response schema: AJV validates the full structure against the published API contract
+    assertSchema(authSuccessSchema, body);
+    // L5 — Contract: no error reason field present on a successful auth response
     expect(body).not.toHaveProperty('reason');
     // L6 — Business logic: token must be a non-empty alphanumeric string — not garbage data
     expect(body.token).toMatch(/^[a-zA-Z0-9]+$/);
@@ -29,9 +28,8 @@ test.describe('Authentication — POST /auth', () => {
     expect(response.status()).toBe(200);
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
-    // L4 — Response schema: error reason field present and typed correctly
-    expect(body).toHaveProperty('reason');
-    expect(typeof body.reason).toBe('string');
+    // L4 — Response schema: AJV validates the full error structure
+    assertSchema(authErrorSchema, body);
     // L5 — Contract: exact error message documented by API; no token issued
     expect(body.reason).toBe('Bad credentials');
     expect(body).not.toHaveProperty('token');
@@ -46,9 +44,8 @@ test.describe('Authentication — POST /auth', () => {
     expect(response.status()).toBe(200);
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
-    // L4 — Response schema: structured error response returned
-    expect(body).toHaveProperty('reason');
-    expect(typeof body.reason).toBe('string');
+    // L4 — Response schema: structured error response must match the error contract
+    assertSchema(authErrorSchema, body);
     // L5 — Contract: missing required field treated as bad credentials; no token issued
     expect(body.reason).toBe('Bad credentials');
     expect(body).not.toHaveProperty('token');
@@ -65,7 +62,7 @@ test.describe('Authentication — POST /auth', () => {
     expect(response.status()).not.toBe(500);
     expect(body).not.toHaveProperty('token');
     // L4 — Response schema: even for empty input the API returns a structured error body
-    expect(body).toHaveProperty('reason');
+    assertSchema(authErrorSchema, body);
     // L8 — Headers
     expect(response.headers()['content-type']).toContain('application/json');
   });

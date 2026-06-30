@@ -1,6 +1,7 @@
 import { test, expect } from '../../../src/api/fixtures/api.fixture';
 import { DataFactory } from '../../../src/shared/utils/DataFactory';
 import { API_CONFIG } from '../../../src/shared/config/config';
+import { assertSchema, createBookingResponseSchema, bookingSchema } from '../../../src/api/models/schemas/booking.schemas';
 
 test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, update, verify, delete, confirm deleted', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, token, bookingCleanup }) => {
   // ── Step 1: Create booking ──────────────────────────────────────────────
@@ -17,7 +18,8 @@ test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, 
 
   expect(createRes.status()).toBe(200);
   expect(createTime).toBeLessThan(API_CONFIG.responseTimeThreshold);
-  expect(createBody.bookingid).toBeGreaterThan(0);
+  // L4 — Response schema: AJV validates the full create envelope against the API contract
+  assertSchema(createBookingResponseSchema, createBody);
   // L7 — Data integrity: every sent field reflected in create response
   expect(createBody.booking.firstname).toBe(originalPayload.firstname);
   expect(createBody.booking.lastname).toBe(originalPayload.lastname);
@@ -38,6 +40,8 @@ test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, 
 
   expect(getRes1.status()).toBe(200);
   expect(getTime1).toBeLessThan(API_CONFIG.responseTimeThreshold);
+  // L4 — Response schema: GET response must conform to the booking contract
+  assertSchema(bookingSchema, getBody1);
   // L6 — Persistence verification: all fields must survive a round-trip GET
   expect(getBody1.firstname).toBe(originalPayload.firstname);
   expect(getBody1.lastname).toBe(originalPayload.lastname);
@@ -57,6 +61,8 @@ test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, 
 
   expect(putRes.status()).toBe(200);
   expect(putTime).toBeLessThan(API_CONFIG.responseTimeThreshold);
+  // L4 — Response schema: PUT response must conform to the booking contract
+  assertSchema(bookingSchema, putBody);
   // L7 — Data integrity: PUT response reflects the new values immediately
   expect(putBody.firstname).toBe(updatePayload.firstname);
   expect(putBody.totalprice).toBe(updatePayload.totalprice);
@@ -69,6 +75,8 @@ test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, 
 
   expect(getRes2.status()).toBe(200);
   expect(getTime2).toBeLessThan(API_CONFIG.responseTimeThreshold);
+  // L4 — Response schema: GET after PUT must still conform to the booking contract
+  assertSchema(bookingSchema, getBody2);
   // L6 — Persistence verification: PUT changes must be durable
   expect(getBody2.firstname).toBe(updatePayload.firstname);
   expect(getBody2.totalprice).toBe(updatePayload.totalprice);

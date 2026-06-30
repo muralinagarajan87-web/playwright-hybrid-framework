@@ -1,6 +1,7 @@
 import { test, expect } from '../../../src/api/fixtures/api.fixture';
 import { API_CONFIG } from '../../../src/shared/config/config';
 import { DataFactory } from '../../../src/shared/utils/DataFactory';
+import { assertSchema, bookingListSchema, bookingSchema } from '../../../src/api/models/schemas/booking.schemas';
 
 test.describe('GET Bookings', () => {
   test('TC_GET_001 — verify the API returns a list of all booking IDs', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService }) => {
@@ -10,15 +11,8 @@ test.describe('GET Bookings', () => {
     expect(response.status()).toBe(200);
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
-    // L4 — Response schema: result is a non-empty array
-    expect(Array.isArray(body)).toBe(true);
-    expect(body.length).toBeGreaterThan(0);
-    // L5 — Contract: validate schema of first 5 items only (avoids iterating thousands of records)
-    const sample = body.slice(0, 5);
-    for (const item of sample) {
-      expect(typeof item.bookingid).toBe('number');
-      expect(item.bookingid).toBeGreaterThan(0);
-    }
+    // L4 — Response schema: AJV validates the full list structure against the API contract
+    assertSchema(bookingListSchema, body);
     // L8 — Headers
     expect(response.headers()['content-type']).toContain('application/json');
   });
@@ -33,17 +27,9 @@ test.describe('GET Bookings', () => {
     expect(response.status()).toBe(200);
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
-    // L4 — Response schema: all required fields present with correct types
-    expect(typeof body.firstname).toBe('string');
-    expect(typeof body.lastname).toBe('string');
-    expect(typeof body.totalprice).toBe('number');
-    expect(typeof body.depositpaid).toBe('boolean');
-    expect(body).toHaveProperty('bookingdates');
-    expect(typeof body.bookingdates.checkin).toBe('string');
-    expect(typeof body.bookingdates.checkout).toBe('string');
-    // L5 — Contract: dates in YYYY-MM-DD format
-    expect(body.bookingdates.checkin).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(body.bookingdates.checkout).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // L4 — Response schema: AJV validates every field name, type, and format in one call
+    assertSchema(bookingSchema, body);
+    // L5 — Contract: dates must be in YYYY-MM-DD format (enforced by AJV "date" format above)
     // L6 — Business logic: name fields must not be empty strings
     expect(body.firstname.length).toBeGreaterThan(0);
     expect(body.lastname.length).toBeGreaterThan(0);
@@ -65,8 +51,8 @@ test.describe('GET Bookings', () => {
     expect(response.status()).toBe(200);
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
-    // L4 — Response schema
-    expect(Array.isArray(body)).toBe(true);
+    // L4 — Response schema: filtered result must still conform to the booking list contract
+    assertSchema(bookingListSchema, body);
     // L7 — Data integrity: the booking we just created must appear in filtered results
     const ids = body.map(b => b.bookingid);
     expect(ids).toContain(createdId);

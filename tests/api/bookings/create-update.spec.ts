@@ -2,6 +2,7 @@ import { test, expect } from '../../../src/api/fixtures/api.fixture';
 import { BOOKING_PAYLOADS } from '../../../test-data/api/bookings';
 import { API_CONFIG } from '../../../src/shared/config/config';
 import { DataFactory } from '../../../src/shared/utils/DataFactory';
+import { assertSchema, createBookingResponseSchema, bookingSchema } from '../../../src/api/models/schemas/booking.schemas';
 
 test.describe('Create & Update Bookings', () => {
   test('TC_CREATE_001 — verify a new booking is created successfully with all fields provided', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
@@ -15,10 +16,8 @@ test.describe('Create & Update Bookings', () => {
     expect(response.status()).toBe(200);
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
-    // L4 — Response schema
-    expect(typeof body.bookingid).toBe('number');
-    expect(body.bookingid).toBeGreaterThan(0);
-    expect(body).toHaveProperty('booking');
+    // L4 — Response schema: AJV validates the full create response envelope against the API contract
+    assertSchema(createBookingResponseSchema, body);
     // L7 — Data integrity: every sent field must be reflected in the response — no silent truncation
     expect(body.booking.firstname).toBe(payload.firstname);
     expect(body.booking.lastname).toBe(payload.lastname);
@@ -35,6 +34,7 @@ test.describe('Create & Update Bookings', () => {
     // not just echoed back in the create response.
     const { response: verifyRes, body: verifyBody } = await bookingService.getBookingById(body.bookingid);
     expect(verifyRes.status()).toBe(200);
+    assertSchema(bookingSchema, verifyBody);
     expect(verifyBody.firstname).toBe(payload.firstname);
     expect(verifyBody.totalprice).toBe(payload.totalprice);
     expect(verifyBody.bookingdates.checkin).toBe(payload.bookingdates.checkin);
@@ -50,10 +50,8 @@ test.describe('Create & Update Bookings', () => {
     expect(response.status()).toBe(200);
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
-    // L4 — Response schema: booking envelope must be present with a valid ID
-    expect(typeof body.bookingid).toBe('number');
-    expect(body.bookingid).toBeGreaterThan(0);
-    expect(body).toHaveProperty('booking');
+    // L4 — Response schema: envelope must conform to the contract even without the optional field
+    assertSchema(createBookingResponseSchema, body);
     // L6 — Business logic: optional field absence must not reject the request
     // L7 — Data integrity: all sent required fields reflected in response
     expect(body.booking.firstname).toBe(payload.firstname);
@@ -68,6 +66,7 @@ test.describe('Create & Update Bookings', () => {
     // Persistence verification: GET confirms optional-field-omitted booking is stored correctly
     const { response: verifyRes, body: verifyBody } = await bookingService.getBookingById(body.bookingid);
     expect(verifyRes.status()).toBe(200);
+    assertSchema(bookingSchema, verifyBody);
     expect(verifyBody.firstname).toBe(payload.firstname);
     expect(verifyBody.totalprice).toBe(payload.totalprice);
   });
@@ -93,6 +92,8 @@ test.describe('Create & Update Bookings', () => {
     expect(response.status()).toBe(200);
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
+    // L4 — Response schema: PUT response must conform to the booking contract
+    assertSchema(bookingSchema, body);
     // L7 — Data integrity: PUT response must reflect every updated field — no silent partial apply
     expect(body.firstname).toBe(updatePayload.firstname);
     expect(body.lastname).toBe(updatePayload.lastname);
@@ -106,6 +107,7 @@ test.describe('Create & Update Bookings', () => {
 
     // L6 — Business logic / persistence verification: changes must survive a round-trip GET
     const { body: persisted } = await bookingService.getBookingById(bookingId);
+    assertSchema(bookingSchema, persisted);
     expect(persisted.firstname).toBe(updatePayload.firstname);
     expect(persisted.totalprice).toBe(updatePayload.totalprice);
     expect(persisted.bookingdates.checkin).toBe(updatePayload.bookingdates.checkin);
@@ -147,6 +149,8 @@ test.describe('Create & Update Bookings', () => {
     expect(response.status()).toBe(200);
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
+    // L4 — Response schema: PATCH response must still conform to the full booking contract
+    assertSchema(bookingSchema, body);
     // L7 — Data integrity: only the patched fields must change
     expect(body.firstname).toBe('PatchedName');
     expect(body.totalprice).toBe(750);
