@@ -1,199 +1,228 @@
-# Playwright Hybrid Automation Framework
+# Playwright Hybrid E2E Framework
 
-A production-grade test automation framework covering **Web UI** and **API** testing, built with **Playwright** and **TypeScript**. Designed for scalability, readability, and zero flakiness.
+A production-grade test automation framework covering **Web UI** and **REST API** testing, built with **Playwright** and **TypeScript**. Designed for scalability, readability, and zero flakiness.
 
 ---
 
-## What This Framework Tests
+## What this framework tests
 
 | Domain | Application | Tests |
 |---|---|---|
-| Web UI | [SauceDemo](https://www.saucedemo.com) — e-commerce demo | 13 tests across Login, Catalog, Cart, Checkout, E2E |
-| API | [Restful-Booker](https://restful-booker.herokuapp.com) — hotel booking REST API | 18 tests across Auth, GET, POST, PUT, PATCH, DELETE, E2E lifecycle |
+| Web UI | [SauceDemo](https://www.saucedemo.com) — e-commerce demo | 13 tests — Login, Catalog, Cart, Checkout, E2E |
+| REST API | [Restful-Booker](https://restful-booker.herokuapp.com) — booking REST API | 21 tests — Auth, GET, POST, PUT, PATCH, DELETE, E2E lifecycle |
 
-**Total: 31 automated tests**
+**Total: 34 automated tests**
 
 ---
 
-## Tech Stack
+## Tech stack
 
 | Tool | Version | Purpose |
 |---|---|---|
-| [Playwright](https://playwright.dev) | Latest | Browser automation + API testing |
-| [TypeScript](https://www.typescriptlang.org) | 5.x | Type-safe test code |
+| [Playwright](https://playwright.dev) | 1.61+ | Browser automation + API testing |
+| [TypeScript](https://www.typescriptlang.org) | 6.x | Type-safe test code |
+| [AJV](https://ajv.js.org) | 8.x | JSON Schema validation for API responses |
 | [Node.js](https://nodejs.org) | 20 LTS | Runtime |
+| [ESLint](https://eslint.org) | 10.x | Linting — includes `eslint-plugin-playwright` |
 | [GitHub Actions](https://github.com/features/actions) | — | CI/CD pipeline |
 
 ---
 
-## Quick Start
+## Quick start
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/muralinagarajan87-web/playwright-hybrid-framework.git
 cd playwright-hybrid-framework
 
-# 2. Install dependencies
-npm install
+# 2. Install dependencies (use ci for reproducible installs)
+npm ci
 
-# 3. Install Chromium browser (web tests only)
-npx playwright install chromium
+# 3. Install Chromium (required for web tests)
+npm run install:browsers
 
-# 4. Run all tests
-npx playwright test
+# 4. Run API sanity tests (no browser needed)
+npm run test:sanity:api
 
-# 5. Open the HTML report
-npx playwright show-report
+# 5. Run all tests
+npm test
+
+# 6. Open the HTML report
+npm run report
 ```
 
 ---
 
-## Run Tests
+## Running tests
 
-### Web UI Tests
+| Command | What runs |
+|---|---|
+| `npm test` | All tests — web (Chromium) + API |
+| `npm run test:web` | Web tests — Chromium |
+| `npm run test:api` | API tests |
+| `npm run test:sanity` | All `@sanity` tests (web + API) |
+| `npm run test:sanity:web` | Web sanity — Chromium |
+| `npm run test:sanity:api` | API sanity |
+| `npm run test:regression` | All `@regression` tests (web + API) |
+| `npm run test:regression:web` | Web regression — Chromium |
+| `npm run test:regression:api` | API regression |
+| `npm run test:headed` | Web tests in a visible browser window |
+| `npm run report` | Open the last HTML test report |
+| `npm run typecheck` | TypeScript type check — zero errors required |
+| `npm run lint` | ESLint check — zero errors required |
+
+### Cross-browser (Firefox)
+
+Firefox is included in the regression CI job automatically. To run it locally:
 
 ```bash
-# All web tests
-npx playwright test --project=web
-
-# Sanity only (runs on every PR)
-npx playwright test --project=web --grep @sanity
-
-# Regression only (runs on merge + nightly)
-npx playwright test --project=web --grep @regression
-
-# Specific spec file
-npx playwright test tests/web/login/login.spec.ts --project=web
-npx playwright test tests/web/catalog/catalog.spec.ts --project=web
-npx playwright test tests/web/cart/cart.spec.ts --project=web
-npx playwright test tests/web/e2e/purchase-flow.e2e.spec.ts --project=web
-
-# Watch the browser
-npx playwright test --project=web --headed
+npx playwright install firefox --with-deps
+npx playwright test --project=web-firefox --grep @regression
 ```
 
-### API Tests
+### Running a single spec file
 
 ```bash
-# All API tests
-npx playwright test --project=api
-
-# Sanity only
-npx playwright test --project=api --grep @sanity
-
-# Regression only
-npx playwright test --project=api --grep @regression
-
-# Specific spec file
 npx playwright test tests/api/auth/auth.spec.ts --project=api
-npx playwright test tests/api/bookings/get-bookings.spec.ts --project=api
-npx playwright test tests/api/bookings/create-update.spec.ts --project=api
-npx playwright test tests/api/bookings/delete-booking.spec.ts --project=api
-npx playwright test tests/api/e2e/booking-lifecycle.e2e.spec.ts --project=api
+npx playwright test tests/web/login/login.spec.ts --project=web
 ```
 
 ---
 
-## Project Structure
+## Project structure
 
 ```
-├── src/
-│   ├── web/
-│   │   ├── pages/          # Page Object Model classes
-│   │   └── fixtures/       # Playwright fixtures + global setup/teardown
-│   ├── api/
-│   │   ├── services/       # Service layer (AuthService, BookingService)
-│   │   ├── models/         # TypeScript interfaces for API contracts
-│   │   └── fixtures/       # API fixtures with automatic cleanup
-│   └── shared/
-│       ├── config/         # Environment-aware configuration
-│       └── utils/          # DataFactory for test data generation
-│
-├── tests/
-│   ├── web/                # Web spec files
-│   └── api/                # API spec files
-│
-├── test-data/
-│   ├── web/                # User accounts, product constants
-│   └── api/                # Booking payloads, auth credentials
-│
-├── .github/workflows/      # CI/CD pipelines
-│   ├── web-tests.yml       # Web sanity (PR) + regression (merge/nightly)
-│   └── api-tests.yml       # API sanity (PR) + regression (merge/nightly)
-│
-├── WEB_AUTOMATION_GUIDE.md # Complete web automation onboarding guide
-├── API_AUTOMATION_GUIDE.md # Complete API automation onboarding guide
-└── playwright.config.ts    # Playwright configuration
+src/
+  api/
+    fixtures/        → api.fixture.ts — token (worker-scoped), bookingService, bookingCleanup
+    models/          → Booking.ts — TypeScript interfaces for API contracts
+    models/schemas/  → booking.schemas.ts — AJV JSON schemas + assertSchema() + assertDateOrder()
+    services/        → BaseService.ts, BookingService.ts, AuthService.ts, endpoints.ts
+  web/
+    components/      → CartItemComponent.ts — shared locator wrapper used by CartPage + CheckoutOverviewPage
+    fixtures/        → pages.fixture.ts, global-setup.ts, global-teardown.ts
+    pages/           → LoginPage.ts, InventoryPage.ts, CartPage.ts, CheckoutInfoPage.ts, ...
+  shared/
+    config/          → config.ts — API_CONFIG and WEB_CONFIG (reads env vars)
+    utils/           → DataFactory.ts — random payload generation + UTC-safe date arithmetic
+
+test-data/
+  api/               → auth.ts (credentials), bookings.ts (BOOKING_PAYLOADS, INVALID_BOOKING_PAYLOADS)
+  web/               → users.ts, products.ts, checkout.ts
+
+tests/
+  api/
+    auth/            → auth.spec.ts (TC_AUTH_001–006)
+    bookings/        → create-update.spec.ts, get-bookings.spec.ts, delete-booking.spec.ts
+    e2e/             → booking-lifecycle.e2e.spec.ts
+  web/
+    login/           → login.spec.ts (TC_LOGIN_001–005)
+    catalog/         → catalog.spec.ts (TC_CAT_001–004)
+    cart/            → cart.spec.ts (TC_CHECKOUT_001–003)
+    e2e/             → purchase-flow.e2e.spec.ts (TC_E2E_WEB_001)
+
+.github/workflows/
+  api-tests.yml      → API sanity (PR gate) + regression (push + nightly)
+  web-tests.yml      → Web sanity Chromium (PR gate) + regression Chromium+Firefox (push + nightly)
+
+storage-state/       → auth.json — generated by global-setup at runtime, never committed
 ```
 
 ---
 
-## CI/CD Pipeline
+## CI/CD pipeline
 
-| Event | Web | API |
+| Trigger | Web job | API job |
 |---|---|---|
-| Pull Request | Sanity tests (`@sanity`) | Sanity tests (`@sanity`) |
-| Merge to `main` or `develop` | Regression tests (`@regression`) | Regression tests (`@regression`) |
-| Nightly at 02:00 UTC | Regression tests (`@regression`) | Regression tests (`@regression`) |
-| Manual dispatch | Both sanity + regression | Both sanity + regression |
+| Pull request | Sanity — Chromium | Sanity |
+| Push to `main` / `develop` | Regression — Chromium + Firefox | Regression |
+| Nightly 02:00 UTC | Regression — Chromium + Firefox | Regression |
+| Manual (`workflow_dispatch`) | Sanity first → Regression if sanity passes | Sanity first → Regression if sanity passes |
+
+**Artifacts retained:** HTML report (30 days), JSON results (90 days).  
+**Notifications:** Slack on failure — set `SLACK_WEBHOOK_URL` as a GitHub repository secret to activate.
 
 ---
 
-## Framework Highlights
+## Environment variables
 
-### Web UI
-- **Page Object Model** — locators defined once in constructors, never inline in tests
-- **Global auth setup** — logs in once, shares session across all tests via `storageState`
-- **UI-first assertions** — every action followed by a UI state verification
-- **`test.step()`** — every test step is labeled in the HTML report
-- **`data-test` attributes** — all locators use stable test-specific attributes
+See [.env.example](.env.example). All variables have working defaults — no changes needed to run against the live demo servers.
 
-### API
-- **8-layer validation** — status code, response time, schema, contract, business logic, data integrity, headers, persistence
-- **Fixture-based teardown** — `bookingCleanup` auto-deletes test data after every test
-- **Persistence verification** — GET after every POST/PUT to prove data was actually stored
-- **DataFactory** — random payloads prevent test pollution in parallel runs
-- **TypeScript models** — compile-time request schema validation via interfaces
+| Variable | Default | Purpose |
+|---|---|---|
+| `API_BASE_URL` | `https://restful-booker.herokuapp.com` | API target URL |
+| `WEB_BASE_URL` | `https://www.saucedemo.com` | Web target URL |
+| `CI` | *(set by GitHub Actions automatically)* | Enables retries, forbids `.only` |
+| `SKIP_BROWSER_SETUP` | *(unset)* | Set `true` in API-only CI runs to skip the browser login in global-setup |
+| `SLACK_WEBHOOK_URL` | *(unset)* | Incoming webhook URL for failure notifications |
 
 ---
 
-## Detailed Guides
+## Key architectural decisions
 
-For complete baby-step onboarding documentation:
+### Web — Page Object Model
 
-- [Web Automation Guide](WEB_AUTOMATION_GUIDE.md) — prerequisites, installation, how to add tests, locator strategy, troubleshooting
-- [API Automation Guide](API_AUTOMATION_GUIDE.md) — prerequisites, installation, service layer, 8 validation layers, teardown, troubleshooting
+One class per page in `src/web/pages/`. All locators defined in the constructor — never inside action methods. `expectOnPage()` always asserts the URL via `waitForURL()` or `toHaveURL()`, never element visibility alone. Locators that appear on multiple pages live in `src/web/components/`.
+
+### API — Service layer
+
+`BaseService` provides `ServiceResponse<T>`, `RawServiceResponse`, `measureResponse()`, and `parseResponse<T>()`. `BookingService` and `AuthService` extend it. Auth token is injected once at fixture setup via `setAuthToken()` — never passed per method call. All endpoint paths are centralised in `src/api/services/endpoints.ts`.
+
+### API — 8-layer assertion model
+
+Every API test asserts across all relevant layers:
+
+| Layer | What it catches |
+|---|---|
+| L1 — Request schema + business rules | Our own test data is wrong before the API call |
+| L2 — Status code | API rejected or misrouted the request |
+| L3 — Response time | Performance regression |
+| L4 — Response schema (AJV) | API renamed a field or changed a type |
+| L5 — Business rules | Date ordering, domain invariants |
+| L6 — Persistence / idempotency | Data written in memory but not storage; GET mutating state |
+| L7 — Data integrity | Field silently truncated or dropped |
+| L8 — HTTP headers | Wrong content type, HTML error page with 200 |
+
+### Cleanup — registration pattern
+
+`bookingCleanup(id)` is called immediately after a booking is created, before any assertion. The fixture deletes all registered IDs after the test ends — pass or fail. Cleanup failures are logged with `console.warn` and never thrown (throwing would overwrite the real test failure).
+
+### Test data
+
+Valid payloads: `BOOKING_PAYLOADS` — TypeScript fully validates these. Invalid payloads: `INVALID_BOOKING_PAYLOADS` — intentionally malformed, kept separate, documented with `_description`. The `as unknown as Booking` cast lives in `test-data/`, not in test files.
 
 ---
 
-## Test Coverage
+## Test coverage
 
-### Web UI (13 tests)
+### Web UI — 13 tests
 
 | Test ID | Description | Tags |
 |---|---|---|
 | TC_LOGIN_001 | Successful login with valid credentials | `@sanity @regression @positive` |
 | TC_LOGIN_002 | Login fails with invalid password | `@sanity @regression @negative` |
 | TC_LOGIN_003 | Locked-out user is blocked | `@regression @negative` |
-| TC_LOGIN_004 | Validation error when username is empty | `@regression @negative` |
-| TC_LOGIN_005 | Validation error when password is empty | `@regression @negative` |
-| TC_CAT_001 | Add product to cart | `@sanity @regression @positive` |
-| TC_CAT_002 | Add multiple products independently | `@regression @positive` |
+| TC_LOGIN_004 | Validation error — username field empty | `@regression @negative` |
+| TC_LOGIN_005 | Validation error — password field empty | `@regression @negative` |
+| TC_CAT_001 | Product added to cart | `@sanity @regression @positive` |
+| TC_CAT_002 | Multiple products added independently | `@regression @positive` |
 | TC_CAT_003 | Cart badge hidden when no products added | `@regression @negative` |
 | TC_CAT_004 | Product details displayed correctly | `@regression @positive` |
 | TC_CHECKOUT_001 | Complete full checkout flow | `@sanity @regression @positive` |
 | TC_CHECKOUT_002 | Checkout form validation — all fields empty | `@regression @negative` |
 | TC_CHECKOUT_003 | Checkout form validation — postal code missing | `@regression @negative` |
-| TC_E2E_WEB_001 | Full purchase flow login to confirmation | `@sanity @regression @positive` |
+| TC_E2E_WEB_001 | Full purchase flow — login to order confirmation | `@sanity @regression @positive` |
 
-### API (18 tests)
+### REST API — 21 tests
 
 | Test ID | Description | Tags |
 |---|---|---|
 | TC_AUTH_001 | Valid token returned with correct credentials | `@sanity @regression @positive` |
-| TC_AUTH_002 | Auth rejected with invalid password | `@sanity @regression @negative` |
-| TC_AUTH_003 | Auth rejected when username field is missing | `@regression @negative` |
+| TC_AUTH_002 | Auth rejected — invalid password | `@sanity @regression @negative` |
+| TC_AUTH_003 | Auth rejected — username field missing | `@regression @negative` |
 | TC_AUTH_004 | Empty request body handled without crash | `@regression @negative` |
+| TC_AUTH_005 | Auth rejected — password field missing | `@regression @negative` |
+| TC_AUTH_006 | Auth rejected — invalid username (same error as invalid password — no enumeration) | `@regression @negative` |
 | TC_GET_001 | Returns list of all booking IDs | `@sanity @regression @positive` |
 | TC_GET_002 | Returns complete booking details by ID | `@sanity @regression @positive` |
 | TC_GET_003 | Returns filtered bookings by firstname | `@regression @positive` |
@@ -204,13 +233,35 @@ For complete baby-step onboarding documentation:
 | TC_UPDATE_001 | Full booking update via PUT | `@regression @positive` |
 | TC_UPDATE_002 | PUT rejected without auth token | `@regression @negative` |
 | TC_UPDATE_003 | Partial booking update via PATCH | `@regression @positive` |
+| TC_UPDATE_004 | PATCH rejected without auth token | `@regression @negative` |
 | TC_DELETE_001 | Booking deleted with valid auth token | `@sanity @regression @positive` |
 | TC_DELETE_002 | Delete rejected without auth token | `@regression @negative` |
 | TC_DELETE_003 | Returns 405 for non-existent booking ID | `@regression @negative` |
-| TC_E2E_API_001 | Full lifecycle: create → verify → update → verify → delete → confirm | `@sanity @regression @positive` |
+| TC_E2E_API_001 | Full lifecycle — create → verify → update → verify → delete → confirm | `@sanity @regression @positive` |
 
 ---
 
-## Author
+## Detailed guides
 
-Murali Nagarajan | Lead SDET
+For complete step-by-step onboarding documentation:
+
+- [Web Automation Guide](WEB_AUTOMATION_GUIDE.md) — locator strategy, POM rules, fixtures, assertions, troubleshooting
+- [API Automation Guide](API_AUTOMATION_GUIDE.md) — service layer, 8-layer assertion model, schemas, cleanup, CI
+
+---
+
+## Adding a new API resource
+
+1. Define TypeScript interfaces in `src/api/models/`.
+2. Add AJV schemas to `src/api/models/schemas/`.
+3. Add endpoint paths to `src/api/services/endpoints.ts`.
+4. Create a service class extending `BaseService` in `src/api/services/`.
+5. Register a fixture in `src/api/fixtures/api.fixture.ts`.
+6. Write spec files in `tests/api/<resource>/` following the 8-layer assertion model.
+
+## Adding a new web page
+
+1. Create a page class in `src/web/pages/` — locators in the constructor, actions and assertions as separate methods.
+2. Register a fixture in `src/web/fixtures/pages.fixture.ts`.
+3. Write spec files in `tests/web/<module>/`.
+4. If a locator appears on more than one page, extract it to `src/web/components/`.

@@ -18,6 +18,8 @@ export default defineConfig({
   globalTeardown: './src/web/fixtures/global-teardown.ts',
 
   projects: [
+    // ── Web: Chromium ─────────────────────────────────────────────────────
+    // Primary browser for sanity (PR gate) and regression.
     {
       name: 'web',
       testDir: './tests/web',
@@ -32,6 +34,27 @@ export default defineConfig({
         video: 'retain-on-failure',
       },
     },
+
+    // ── Web: Firefox ──────────────────────────────────────────────────────
+    // Cross-browser coverage — regression only (not sanity, to keep PR gates fast).
+    // Storage state (cookies) from global-setup is browser-agnostic JSON;
+    // the same auth.json works across Chromium and Firefox.
+    {
+      name: 'web-firefox',
+      testDir: './tests/web',
+      use: {
+        ...devices['Desktop Firefox'],
+        baseURL: process.env.WEB_BASE_URL || 'https://www.saucedemo.com',
+        storageState: 'storage-state/auth.json',
+        actionTimeout: 10_000,
+        navigationTimeout: 30_000,
+        trace: 'on-first-retry',
+        screenshot: 'only-on-failure',
+        video: 'retain-on-failure',
+      },
+    },
+
+    // ── API ───────────────────────────────────────────────────────────────
     {
       name: 'api',
       testDir: './tests/api',

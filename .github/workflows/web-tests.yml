@@ -42,7 +42,9 @@ jobs:
           key: playwright-chromium-${{ hashFiles('package-lock.json') }}
           restore-keys: playwright-chromium-
 
-      - name: Install Playwright (browser + system deps)
+      # Sanity runs Chromium only — keeps PR gate fast.
+      # Firefox is added in the regression job for cross-browser coverage.
+      - name: Install Playwright browsers (sanity — Chromium only)
         run: npx playwright install chromium --with-deps
 
       - name: Run web sanity tests
@@ -109,14 +111,16 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-chromium-${{ hashFiles('package-lock.json') }}
-          restore-keys: playwright-chromium-
+          key: playwright-chromium-firefox-${{ hashFiles('package-lock.json') }}
+          restore-keys: playwright-chromium-firefox-
 
-      - name: Install Playwright (browser + system deps)
-        run: npx playwright install chromium --with-deps
+      # Regression installs both Chromium and Firefox for cross-browser coverage.
+      # Firefox catches browser-specific rendering and behaviour differences.
+      - name: Install Playwright browsers (regression — Chromium + Firefox)
+        run: npx playwright install chromium firefox --with-deps
 
-      - name: Run web regression tests
-        run: npx playwright test --project=web --grep @regression
+      - name: Run web regression tests (Chromium + Firefox)
+        run: npx playwright test --project=web --project=web-firefox --grep @regression
 
       - name: Upload HTML report
         if: always()
