@@ -2,11 +2,21 @@ import { test, expect } from '../../../src/api/fixtures/api.fixture';
 import { BOOKING_PAYLOADS } from '../../../test-data/api/bookings';
 import { API_CONFIG } from '../../../src/shared/config/config';
 import { DataFactory } from '../../../src/shared/utils/DataFactory';
-import { assertSchema, createBookingResponseSchema, bookingSchema } from '../../../src/api/models/schemas/booking.schemas';
+import {
+  assertSchema,
+  assertDateOrder,
+  createBookingResponseSchema,
+  bookingSchema,
+  bookingRequestSchema,
+  partialBookingRequestSchema,
+} from '../../../src/api/models/schemas/booking.schemas';
 
 test.describe('Create & Update Bookings', () => {
   test('TC_CREATE_001 — verify a new booking is created successfully with all fields provided', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
     const payload = BOOKING_PAYLOADS.complete;
+    // L1 — Request schema: validate the payload WE construct before it leaves the test
+    assertSchema(bookingRequestSchema, payload);
+
     const { response, body, durationMs } = await bookingService.createBooking(payload);
 
     // Register for teardown before any assertions — fixture deletes this after the test
@@ -18,6 +28,8 @@ test.describe('Create & Update Bookings', () => {
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
     // L4 — Response schema: AJV validates the full create response envelope against the API contract
     assertSchema(createBookingResponseSchema, body);
+    // L5 — Contract: checkout must be on or after checkin — a booking system's most critical business rule
+    assertDateOrder(body.booking.bookingdates.checkin, body.booking.bookingdates.checkout);
     // L7 — Data integrity: every sent field must be reflected in the response — no silent truncation
     expect(body.booking.firstname).toBe(payload.firstname);
     expect(body.booking.lastname).toBe(payload.lastname);
@@ -35,6 +47,7 @@ test.describe('Create & Update Bookings', () => {
     const { response: verifyRes, body: verifyBody } = await bookingService.getBookingById(body.bookingid);
     expect(verifyRes.status()).toBe(200);
     assertSchema(bookingSchema, verifyBody);
+    assertDateOrder(verifyBody.bookingdates.checkin, verifyBody.bookingdates.checkout);
     expect(verifyBody.firstname).toBe(payload.firstname);
     expect(verifyBody.totalprice).toBe(payload.totalprice);
     expect(verifyBody.bookingdates.checkin).toBe(payload.bookingdates.checkin);
@@ -42,6 +55,9 @@ test.describe('Create & Update Bookings', () => {
 
   test('TC_CREATE_002 — verify a booking is created successfully without the optional additionalneeds field', { tag: ['@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
     const payload = BOOKING_PAYLOADS.withoutAdditionalNeeds;
+    // L1 — Request schema
+    assertSchema(bookingRequestSchema, payload);
+
     const { response, body, durationMs } = await bookingService.createBooking(payload);
 
     bookingCleanup(body.bookingid);
@@ -52,6 +68,8 @@ test.describe('Create & Update Bookings', () => {
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
     // L4 — Response schema: envelope must conform to the contract even without the optional field
     assertSchema(createBookingResponseSchema, body);
+    // L5 — Date ordering
+    assertDateOrder(body.booking.bookingdates.checkin, body.booking.bookingdates.checkout);
     // L6 — Business logic: optional field absence must not reject the request
     // L7 — Data integrity: all sent required fields reflected in response
     expect(body.booking.firstname).toBe(payload.firstname);
@@ -63,7 +81,7 @@ test.describe('Create & Update Bookings', () => {
     // L8 — Headers
     expect(response.headers()['content-type']).toContain('application/json');
 
-    // Persistence verification: GET confirms optional-field-omitted booking is stored correctly
+    // Persistence verification
     const { response: verifyRes, body: verifyBody } = await bookingService.getBookingById(body.bookingid);
     expect(verifyRes.status()).toBe(200);
     assertSchema(bookingSchema, verifyBody);
@@ -86,6 +104,9 @@ test.describe('Create & Update Bookings', () => {
     bookingCleanup(bookingId);
 
     const updatePayload = BOOKING_PAYLOADS.updatePayload;
+    // L1 — Request schema: PUT sends a complete booking object — same schema as POST
+    assertSchema(bookingRequestSchema, updatePayload);
+
     const { response, body, durationMs } = await bookingService.updateBooking(bookingId, { ...updatePayload }, token);
 
     // L2 — Status code
@@ -94,6 +115,8 @@ test.describe('Create & Update Bookings', () => {
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
     // L4 — Response schema: PUT response must conform to the booking contract
     assertSchema(bookingSchema, body);
+    // L5 — Date ordering: updated dates must still satisfy the business rule
+    assertDateOrder(body.bookingdates.checkin, body.bookingdates.checkout);
     // L7 — Data integrity: PUT response must reflect every updated field — no silent partial apply
     expect(body.firstname).toBe(updatePayload.firstname);
     expect(body.lastname).toBe(updatePayload.lastname);
@@ -105,9 +128,10 @@ test.describe('Create & Update Bookings', () => {
     // L8 — Headers
     expect(response.headers()['content-type']).toContain('application/json');
 
-    // L6 — Business logic / persistence verification: changes must survive a round-trip GET
+    // L6 — Persistence verification: changes must survive a round-trip GET
     const { body: persisted } = await bookingService.getBookingById(bookingId);
     assertSchema(bookingSchema, persisted);
+    assertDateOrder(persisted.bookingdates.checkin, persisted.bookingdates.checkout);
     expect(persisted.firstname).toBe(updatePayload.firstname);
     expect(persisted.totalprice).toBe(updatePayload.totalprice);
     expect(persisted.bookingdates.checkin).toBe(updatePayload.bookingdates.checkin);
@@ -126,7 +150,7 @@ test.describe('Create & Update Bookings', () => {
     expect(response.status()).toBe(403);
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
-    // L6 — Business logic / persistence verification: original data must be completely unchanged
+    // L6 — Persistence verification: original data must be completely unchanged
     const { body: unchanged } = await bookingService.getBookingById(bookingId);
     expect(unchanged.firstname).toBe(original.firstname);
     expect(unchanged.lastname).toBe(original.lastname);
@@ -139,11 +163,11 @@ test.describe('Create & Update Bookings', () => {
     const bookingId = created.body.bookingid;
     bookingCleanup(bookingId);
 
-    const { response, body, durationMs } = await bookingService.partialUpdateBooking(
-      bookingId,
-      { firstname: 'PatchedName', totalprice: 750 },
-      token
-    );
+    const patchPayload = { firstname: 'PatchedName', totalprice: 750 };
+    // L1 — Request schema: PATCH sends a partial object — at least 1 field, no required fields
+    assertSchema(partialBookingRequestSchema, patchPayload);
+
+    const { response, body, durationMs } = await bookingService.partialUpdateBooking(bookingId, patchPayload, token);
 
     // L2 — Status code
     expect(response.status()).toBe(200);
@@ -151,6 +175,8 @@ test.describe('Create & Update Bookings', () => {
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
     // L4 — Response schema: PATCH response must still conform to the full booking contract
     assertSchema(bookingSchema, body);
+    // L5 — Date ordering: original dates must be preserved and still valid
+    assertDateOrder(body.bookingdates.checkin, body.bookingdates.checkout);
     // L7 — Data integrity: only the patched fields must change
     expect(body.firstname).toBe('PatchedName');
     expect(body.totalprice).toBe(750);
