@@ -14,8 +14,9 @@ test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, 
   // ── Step 1: Create booking ──────────────────────────────────────────────
   const originalPayload = DataFactory.createBookingPayload(E2E_BOOKING_OVERRIDES);
 
-  // L1 — Request schema: validate the create payload before it leaves the test
+  // L1 — Request schema + business rules: validate both structure and date ordering
   assertSchema(bookingRequestSchema, originalPayload);
+  assertDateOrder(originalPayload.bookingdates.checkin, originalPayload.bookingdates.checkout);
 
   const { response: createRes, body: createBody, durationMs: createTime } =
     await bookingService.createBooking(originalPayload);
@@ -64,8 +65,9 @@ test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, 
     totalprice: 999,
   });
 
-  // L1 — Request schema: validate the update payload before it leaves the test
+  // L1 — Request schema + business rules
   assertSchema(bookingRequestSchema, updatePayload);
+  assertDateOrder(updatePayload.bookingdates.checkin, updatePayload.bookingdates.checkout);
 
   const { response: putRes, body: putBody, durationMs: putTime } =
     await bookingService.updateBooking(bookingId, updatePayload);

@@ -15,9 +15,12 @@ export class DataFactory {
   }
 
   static futureDate(daysFromNow: number): string {
-    const date = new Date();
-    date.setDate(date.getDate() + daysFromNow);
-    return date.toISOString().split('T')[0] ?? '';
+    // Work entirely in UTC so the result is identical regardless of the CI runner's
+    // local timezone. Mixing local setDate() with toISOString() (UTC) caused off-by-one
+    // date errors in UTC+X timezones when tests ran near midnight local time.
+    const now = new Date();
+    const utc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysFromNow);
+    return new Date(utc).toISOString().split('T')[0] ?? '';
   }
 
   static createBookingPayload(overrides?: Partial<Booking>): Booking {

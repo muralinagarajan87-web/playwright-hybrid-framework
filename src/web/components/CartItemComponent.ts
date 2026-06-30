@@ -20,7 +20,10 @@ export class CartItemComponent {
     await expect(this.nameLocator.filter({ hasText: productName })).toBeVisible();
   }
 
-  async getProductName(): Promise<string> {
-    return this.nameLocator.innerText();
+  // Returns the name of the FIRST matched item inside the container.
+  // If the container holds multiple items, use filter({ hasText }) on the locator directly
+  // rather than calling this method and comparing — innerText() silently picks the first.
+  async getFirstProductName(): Promise<string> {
+    return this.nameLocator.first().innerText();
   }
 }

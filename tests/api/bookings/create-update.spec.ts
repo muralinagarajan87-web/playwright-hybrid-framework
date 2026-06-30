@@ -14,8 +14,11 @@ import {
 test.describe('Create & Update Bookings', () => {
   test('TC_CREATE_001 — verify a new booking is created successfully with all fields provided', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
     const payload = BOOKING_PAYLOADS.complete;
-    // L1 — Request schema: validate the payload WE construct before it leaves the test
+    // L1 — Request schema + business rules: validate both structure and date ordering
+    // on the payload WE construct before it leaves the test. If test-data is ever edited
+    // to produce checkin > checkout, the failure message points here — not at the API.
     assertSchema(bookingRequestSchema, payload);
+    assertDateOrder(payload.bookingdates.checkin, payload.bookingdates.checkout);
 
     const { response, body, durationMs } = await bookingService.createBooking(payload);
 
@@ -55,8 +58,9 @@ test.describe('Create & Update Bookings', () => {
 
   test('TC_CREATE_002 — verify a booking is created successfully without the optional additionalneeds field', { tag: ['@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
     const payload = BOOKING_PAYLOADS.withoutAdditionalNeeds;
-    // L1 — Request schema
+    // L1 — Request schema + business rules
     assertSchema(bookingRequestSchema, payload);
+    assertDateOrder(payload.bookingdates.checkin, payload.bookingdates.checkout);
 
     const { response, body, durationMs } = await bookingService.createBooking(payload);
 
@@ -107,8 +111,9 @@ test.describe('Create & Update Bookings', () => {
     bookingCleanup(bookingId);
 
     const updatePayload = BOOKING_PAYLOADS.updatePayload;
-    // L1 — Request schema: PUT sends a complete booking object — same schema as POST
+    // L1 — Request schema + business rules: PUT sends a complete booking — validate both
     assertSchema(bookingRequestSchema, updatePayload);
+    assertDateOrder(updatePayload.bookingdates.checkin, updatePayload.bookingdates.checkout);
 
     const { response, body, durationMs } = await bookingService.updateBooking(bookingId, { ...updatePayload });
 
@@ -183,7 +188,7 @@ test.describe('Create & Update Bookings', () => {
     // L7 — Data integrity: only the patched fields must change
     expect(body.firstname).toBe(BOOKING_PAYLOADS.patchPayload.firstname);
     expect(body.totalprice).toBe(BOOKING_PAYLOADS.patchPayload.totalprice);
-    // L5 — Contract: ALL unpatched fields must retain their exact original values
+    // L7 — Data integrity: ALL unpatched fields must retain their exact original values
     expect(body.lastname).toBe(original.lastname);
     expect(body.depositpaid).toBe(original.depositpaid);
     expect(body.bookingdates.checkin).toBe(original.bookingdates.checkin);

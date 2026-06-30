@@ -36,6 +36,10 @@ export default defineConfig({
       name: 'api',
       testDir: './tests/api',
       use: {
+        // baseURL here and API_CONFIG.baseUrl in config.ts both read the same env var.
+        // Service methods build absolute URLs from API_CONFIG.baseUrl, so they do not
+        // rely on this baseURL. It is kept here so any raw `request` fixture usage in
+        // future tests can use relative paths without needing an import of API_CONFIG.
         baseURL: process.env.API_BASE_URL || 'https://restful-booker.herokuapp.com',
         extraHTTPHeaders: {
           'Content-Type': 'application/json',
