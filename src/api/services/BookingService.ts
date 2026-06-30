@@ -1,13 +1,29 @@
-import { APIResponse } from '@playwright/test';
-import { BaseService } from './BaseService';
+import { BaseService, ServiceResponse, RawServiceResponse } from './BaseService';
 import { Booking, BookingFilters, CreateBookingResponse, BookingId } from '../models/Booking';
 
 export class BookingService extends BaseService {
-  async getAllBookings(filters?: BookingFilters): Promise<{
-    response: APIResponse;
-    body: BookingId[];
-    durationMs: number;
-  }> {
+  // Auth token injected at fixture setup time via setAuthToken().
+  // Centralised here so tests never pass token per-call — auth is a service-layer concern,
+  // not a test concern. Rotating or scoping the token only requires changing the fixture.
+  private authToken: string | null = null;
+
+  setAuthToken(token: string): void {
+    this.authToken = token;
+  }
+
+  // Builds auth headers and throws immediately if no token has been set.
+  // Authenticated methods call this; unauthenticated variants bypass it.
+  private getAuthHeaders(): Record<string, string> {
+    if (!this.authToken) {
+      throw new Error(
+        'Authenticated operation called without a token. ' +
+        'Ensure the bookingService fixture injects a token via setAuthToken().'
+      );
+    }
+    return { ...this.jsonHeaders, Cookie: `token=${this.authToken}` };
+  }
+
+  async getAllBookings(filters?: BookingFilters): Promise<ServiceResponse<BookingId[]>> {
     const params = filters
       ? new URLSearchParams(filters as Record<string, string>).toString()
       : '';
@@ -19,28 +35,23 @@ export class BookingService extends BaseService {
     return { response, body, durationMs };
   }
 
-  async getBookingById(id: number): Promise<{
-    response: APIResponse;
-    body: Booking;
-    durationMs: number;
-  }> {
+  async getBookingById(id: number): Promise<ServiceResponse<Booking>> {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.get(`${this.baseUrl}/booking/${id}`, { headers: this.jsonHeaders })
     );
+    // Returns {} as Booking on non-200 to support negative tests (e.g. TC_GET_004) that
+    // assert response.status() directly without reading body.
+    // Use parseResponse<T>() in new methods where the caller always expects success.
     const body = response.status() === 200
       ? await response.json() as Booking
       : ({} as Booking);
     return { response, body, durationMs };
   }
 
-  // Accepts `Booking` (strongly typed) for valid payloads.
-  // Negative tests that deliberately send malformed data must cast at the call-site
-  // (`payload as unknown as Booking`) so the intentional misuse is visible in test-data.
-  async createBooking(payload: Booking): Promise<{
-    response: APIResponse;
-    body: CreateBookingResponse;
-    durationMs: number;
-  }> {
+  // Accepts `Booking` (strongly typed). Negative-test payloads that deliberately omit
+  // required fields are declared in INVALID_BOOKING_PAYLOADS with `as unknown as Booking`
+  // so the intentional misuse is visible in the test-data layer, not here.
+  async createBooking(payload: Booking): Promise<ServiceResponse<CreateBookingResponse>> {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.post(`${this.baseUrl}/booking`, {
         data: payload,
@@ -53,15 +64,11 @@ export class BookingService extends BaseService {
     return { response, body, durationMs };
   }
 
-  async updateBooking(id: number, payload: Booking, token: string): Promise<{
-    response: APIResponse;
-    body: Booking;
-    durationMs: number;
-  }> {
+  async updateBooking(id: number, payload: Booking): Promise<ServiceResponse<Booking>> {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.put(`${this.baseUrl}/booking/${id}`, {
         data: payload,
-        headers: { ...this.jsonHeaders, Cookie: `token=${token}` },
+        headers: this.getAuthHeaders(),
       })
     );
     const body = response.status() === 200
@@ -70,10 +77,7 @@ export class BookingService extends BaseService {
     return { response, body, durationMs };
   }
 
-  async updateBookingWithoutAuth(id: number, payload: Booking): Promise<{
-    response: APIResponse;
-    durationMs: number;
-  }> {
+  async updateBookingWithoutAuth(id: number, payload: Booking): Promise<RawServiceResponse> {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.put(`${this.baseUrl}/booking/${id}`, {
         data: payload,
@@ -83,15 +87,14 @@ export class BookingService extends BaseService {
     return { response, durationMs };
   }
 
-  async partialUpdateBooking(id: number, payload: Partial<Booking>, token: string): Promise<{
-    response: APIResponse;
-    body: Booking;
-    durationMs: number;
-  }> {
+  async partialUpdateBooking(
+    id: number,
+    payload: Partial<Booking>
+  ): Promise<ServiceResponse<Booking>> {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.patch(`${this.baseUrl}/booking/${id}`, {
         data: payload,
-        headers: { ...this.jsonHeaders, Cookie: `token=${token}` },
+        headers: this.getAuthHeaders(),
       })
     );
     const body = response.status() === 200
@@ -100,22 +103,18 @@ export class BookingService extends BaseService {
     return { response, body, durationMs };
   }
 
-  async deleteBooking(id: number, token: string): Promise<{
-    response: APIResponse;
-    durationMs: number;
-  }> {
+  async deleteBooking(id: number): Promise<RawServiceResponse> {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.delete(`${this.baseUrl}/booking/${id}`, {
-        headers: { Cookie: `token=${token}` },
+        // getAuthHeaders() includes both JSON headers and Cookie — previously this method
+        // only sent Cookie, missing Accept/Content-Type (header inconsistency bug).
+        headers: this.getAuthHeaders(),
       })
     );
     return { response, durationMs };
   }
 
-  async deleteBookingWithoutAuth(id: number): Promise<{
-    response: APIResponse;
-    durationMs: number;
-  }> {
+  async deleteBookingWithoutAuth(id: number): Promise<RawServiceResponse> {
     const { response, durationMs } = await this.measureResponse(() =>
       this.request.delete(`${this.baseUrl}/booking/${id}`)
     );

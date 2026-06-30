@@ -35,6 +35,10 @@ test.describe('Login Module', () => {
     await test.step('Verify the error message text reads "Username and password do not match"', async () => {
       await expect(loginPage.errorMessage).toContainText('Username and password do not match');
     });
+
+    await test.step('Verify the user remains on the login page (not redirected to inventory)', async () => {
+      await loginPage.expectOnPage();
+    });
   });
 
   test('TC_LOGIN_003 — verify a locked-out user is blocked from logging in', { tag: ['@regression', '@negative'] }, async ({ loginPage }) => {
@@ -48,6 +52,10 @@ test.describe('Login Module', () => {
 
     await test.step('Verify the error message text reads "Sorry, this user has been locked out"', async () => {
       await expect(loginPage.errorMessage).toContainText('Sorry, this user has been locked out');
+    });
+
+    await test.step('Verify the user remains on the login page (not redirected to inventory)', async () => {
+      await loginPage.expectOnPage();
     });
   });
 
@@ -63,6 +71,10 @@ test.describe('Login Module', () => {
     await test.step('Verify the error message text reads "Username is required"', async () => {
       await expect(loginPage.errorMessage).toContainText('Username is required');
     });
+
+    await test.step('Verify the user remains on the login page (not redirected to inventory)', async () => {
+      await loginPage.expectOnPage();
+    });
   });
 
   test('TC_LOGIN_005 — verify login validation when the password field is empty', { tag: ['@regression', '@negative'] }, async ({ loginPage }) => {
@@ -76,6 +88,10 @@ test.describe('Login Module', () => {
 
     await test.step('Verify the error message text reads "Password is required"', async () => {
       await expect(loginPage.errorMessage).toContainText('Password is required');
+    });
+
+    await test.step('Verify the user remains on the login page (not redirected to inventory)', async () => {
+      await loginPage.expectOnPage();
     });
   });
 });

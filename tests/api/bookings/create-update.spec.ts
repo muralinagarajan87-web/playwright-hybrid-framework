@@ -1,5 +1,5 @@
 import { test, expect } from '../../../src/api/fixtures/api.fixture';
-import { BOOKING_PAYLOADS } from '../../../test-data/api/bookings';
+import { BOOKING_PAYLOADS, INVALID_BOOKING_PAYLOADS } from '../../../test-data/api/bookings';
 import { API_CONFIG } from '../../../src/shared/config/config';
 import { DataFactory } from '../../../src/shared/utils/DataFactory';
 import {
@@ -90,7 +90,7 @@ test.describe('Create & Update Bookings', () => {
   });
 
   test('TC_CREATE_003 — verify the API rejects booking creation when the firstname field is missing', { tag: ['@regression', '@negative'] }, async ({ bookingService }) => {
-    const { response, durationMs } = await bookingService.createBooking(BOOKING_PAYLOADS.missingFirstname);
+    const { response, durationMs } = await bookingService.createBooking(INVALID_BOOKING_PAYLOADS.missingFirstname.data);
 
     // L3 — Response time
     expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
@@ -101,7 +101,7 @@ test.describe('Create & Update Bookings', () => {
     expect(response.status()).toBe(500);
   });
 
-  test('TC_UPDATE_001 — verify a booking is fully updated with a valid auth token', { tag: ['@regression', '@positive'] }, async ({ bookingService, token, bookingCleanup }) => {
+  test('TC_UPDATE_001 — verify a booking is fully updated with a valid auth token', { tag: ['@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
     const created = await bookingService.createBooking(DataFactory.createBookingPayload());
     const bookingId = created.body.bookingid;
     bookingCleanup(bookingId);
@@ -110,7 +110,7 @@ test.describe('Create & Update Bookings', () => {
     // L1 — Request schema: PUT sends a complete booking object — same schema as POST
     assertSchema(bookingRequestSchema, updatePayload);
 
-    const { response, body, durationMs } = await bookingService.updateBooking(bookingId, { ...updatePayload }, token);
+    const { response, body, durationMs } = await bookingService.updateBooking(bookingId, { ...updatePayload });
 
     // L2 — Status code
     expect(response.status()).toBe(200);
@@ -160,7 +160,7 @@ test.describe('Create & Update Bookings', () => {
     expect(unchanged.totalprice).toBe(original.totalprice);
   });
 
-  test('TC_UPDATE_003 — verify a booking can be partially updated using PATCH with a valid auth token', { tag: ['@regression', '@positive'] }, async ({ bookingService, token, bookingCleanup }) => {
+  test('TC_UPDATE_003 — verify a booking can be partially updated using PATCH with a valid auth token', { tag: ['@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
     const original = DataFactory.createBookingPayload();
     const created = await bookingService.createBooking(original);
     const bookingId = created.body.bookingid;
@@ -170,7 +170,7 @@ test.describe('Create & Update Bookings', () => {
     // L1 — Request schema: PATCH sends a partial object — at least 1 field, no required fields
     assertSchema(partialBookingRequestSchema, patchPayload);
 
-    const { response, body, durationMs } = await bookingService.partialUpdateBooking(bookingId, patchPayload, token);
+    const { response, body, durationMs } = await bookingService.partialUpdateBooking(bookingId, patchPayload);
 
     // L2 — Status code
     expect(response.status()).toBe(200);

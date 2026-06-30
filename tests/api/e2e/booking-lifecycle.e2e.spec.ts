@@ -10,7 +10,7 @@ import {
   bookingRequestSchema,
 } from '../../../src/api/models/schemas/booking.schemas';
 
-test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, update, verify, delete, confirm deleted', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, token, bookingCleanup }) => {
+test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, update, verify, delete, confirm deleted', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
   // ── Step 1: Create booking ──────────────────────────────────────────────
   const originalPayload = DataFactory.createBookingPayload(E2E_BOOKING_OVERRIDES);
 
@@ -68,7 +68,7 @@ test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, 
   assertSchema(bookingRequestSchema, updatePayload);
 
   const { response: putRes, body: putBody, durationMs: putTime } =
-    await bookingService.updateBooking(bookingId, updatePayload, token);
+    await bookingService.updateBooking(bookingId, updatePayload);
 
   expect(putRes.status()).toBe(200);
   expect(putTime).toBeLessThan(API_CONFIG.responseTimeThreshold);
@@ -99,7 +99,7 @@ test('TC_E2E_API_001 — verify the complete booking lifecycle: create, verify, 
 
   // ── Step 5: Delete booking ──────────────────────────────────────────────
   const { response: deleteRes, durationMs: deleteTime } =
-    await bookingService.deleteBooking(bookingId, token);
+    await bookingService.deleteBooking(bookingId);
 
   expect(deleteRes.status()).toBe(201);
   expect(deleteTime).toBeLessThan(API_CONFIG.responseTimeThreshold);

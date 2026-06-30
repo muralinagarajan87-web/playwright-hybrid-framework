@@ -3,14 +3,14 @@ import { API_CONFIG } from '../../../src/shared/config/config';
 import { DataFactory } from '../../../src/shared/utils/DataFactory';
 
 test.describe('Delete Booking — DELETE /booking/:id', () => {
-  test('TC_DELETE_001 — verify a booking is successfully deleted with a valid auth token', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, token, bookingCleanup }) => {
+  test('TC_DELETE_001 — verify a booking is successfully deleted with a valid auth token', { tag: ['@sanity', '@regression', '@positive'] }, async ({ bookingService, bookingCleanup }) => {
     const created = await bookingService.createBooking(DataFactory.createBookingPayload());
     const bookingId = created.body.bookingid;
 
     // Register as a safety net: if the delete below fails mid-way, fixture teardown catches it
     bookingCleanup(bookingId);
 
-    const { response, durationMs } = await bookingService.deleteBooking(bookingId, token);
+    const { response, durationMs } = await bookingService.deleteBooking(bookingId);
 
     // L2 — Status code: Restful-Booker documents 201 as the success status for DELETE
     expect(response.status()).toBe(201);
@@ -42,8 +42,8 @@ test.describe('Delete Booking — DELETE /booking/:id', () => {
     expect(getResponse.status()).toBe(200);
   });
 
-  test('TC_DELETE_003 — verify the API returns 405 when deleting a non-existent booking ID', { tag: ['@regression', '@negative'] }, async ({ bookingService, token }) => {
-    const { response, durationMs } = await bookingService.deleteBooking(999999, token);
+  test('TC_DELETE_003 — verify the API returns 405 when deleting a non-existent booking ID', { tag: ['@regression', '@negative'] }, async ({ bookingService }) => {
+    const { response, durationMs } = await bookingService.deleteBooking(999999);
 
     // L2 — Status code: 405 is the documented behaviour for non-existent IDs on Restful-Booker
     expect(response.status()).toBe(405);
