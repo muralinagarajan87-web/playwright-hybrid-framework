@@ -24,6 +24,11 @@ type ApiWorkerFixtures = {
 
 export const test = base.extend<ApiFixtures, ApiWorkerFixtures>({
   // ── Worker-scoped ──────────────────────────────────────────────────────────
+  // TOKEN EXPIRY ASSUMPTION: Restful-Booker tokens do not expire, so a single
+  // token per worker is safe for the lifetime of a test run. If this framework
+  // is ever pointed at an API with short-lived tokens (e.g. JWT with 15min TTL),
+  // replace this fixture with a per-test token (scope: 'test') or add a refresh
+  // mechanism that calls /auth again when a 401 is detected mid-run.
   token: [async ({ playwright }, use) => {
     const context = await playwright.request.newContext({
       baseURL: API_CONFIG.baseUrl,

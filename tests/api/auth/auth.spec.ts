@@ -69,4 +69,41 @@ test.describe('Authentication — POST /auth', () => {
     // L8 — Headers
     expect(response.headers()['content-type']).toContain('application/json');
   });
+
+  test('TC_AUTH_005 — verify authentication is rejected when the password field is missing', { tag: ['@regression', '@negative'] }, async ({ authService }) => {
+    // Symmetric to TC_AUTH_003 (missing username) — both fields are required;
+    // omitting either one must be treated identically by the auth endpoint.
+    const { response, body, durationMs } = await authService.createTokenRaw(AUTH_CREDENTIALS.missingPassword);
+
+    // L2 — Status code
+    expect(response.status()).toBe(200);
+    // L3 — Response time
+    expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
+    // L4 — Response schema
+    assertSchema(authErrorSchema, body);
+    // L5 — Contract: missing password must not issue a token
+    expect(body.reason).toBe('Bad credentials');
+    expect(body).not.toHaveProperty('token');
+    // L8 — Headers
+    expect(response.headers()['content-type']).toContain('application/json');
+  });
+
+  test('TC_AUTH_006 — verify authentication is rejected with an invalid username', { tag: ['@regression', '@negative'] }, async ({ authService }) => {
+    // Symmetric to TC_AUTH_002 (invalid password) — tests the opposite invalid-credential axis.
+    // Ensures the API does not leak whether a username exists (timing oracle / enumeration risk).
+    const { response, body, durationMs } = await authService.createTokenRaw(AUTH_CREDENTIALS.invalidUsername);
+
+    // L2 — Status code
+    expect(response.status()).toBe(200);
+    // L3 — Response time
+    expect(durationMs).toBeLessThan(API_CONFIG.responseTimeThreshold);
+    // L4 — Response schema
+    assertSchema(authErrorSchema, body);
+    // L5 — Contract: invalid username and invalid password must return the same error message —
+    // distinguishing between them would allow username enumeration (security regression).
+    expect(body.reason).toBe('Bad credentials');
+    expect(body).not.toHaveProperty('token');
+    // L8 — Headers
+    expect(response.headers()['content-type']).toContain('application/json');
+  });
 });

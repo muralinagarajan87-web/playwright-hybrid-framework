@@ -1,6 +1,20 @@
 import { BaseService, ServiceResponse, RawServiceResponse } from './BaseService';
 import { Booking, BookingFilters, CreateBookingResponse, BookingId } from '../models/Booking';
 
+/**
+ * ## Body-handling pattern — two approaches, both intentional
+ *
+ * **`parseResponse<T>()`** (BaseService utility) — use in NEW methods that only have
+ * positive-path tests. It throws immediately on any non-success status, so the caller
+ * always receives a fully typed body.
+ *
+ * **Conditional `{} as T`** — used in methods that have NEGATIVE test cases that inspect
+ * `response.status()` directly (e.g. `getBookingById` → TC_GET_004 expects 404;
+ * `createBooking` → TC_CREATE_003 expects 500). These tests must not throw on non-200 —
+ * they need the raw `response` object back so they can assert the error status code.
+ *
+ * This is a documented trade-off, not an incomplete migration.
+ */
 export class BookingService extends BaseService {
   // Auth token injected at fixture setup time via setAuthToken().
   // Centralised here so tests never pass token per-call — auth is a service-layer concern,
